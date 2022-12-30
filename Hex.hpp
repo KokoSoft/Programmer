@@ -10,32 +10,28 @@
 
 #include <filesystem>
 #include <fstream>
-#include <span>
+#include <string_view>
 
-class Sections {
-	public:
-		virtual void process(uint32_t address, std::span<uint8_t> data);
-};
+class ImageInterface;
 
 class Hex {
 	public:
-		Hex(std::filesystem::path path);
-		void print();
+		static void read(const std::filesystem::path& path, ImageInterface& image);
 
 	protected:
-		std::ifstream file;
+		std::ifstream _file;
 
+		Hex(const std::filesystem::path& path, ImageInterface& image);
 
 	private:
-		uint32_t start_address;
-		uint32_t segment_address;
-		std::vector<uint8_t> payload;
-		Sections sections;
+		uint32_t _start_address;
+		uint32_t _segment_address;
+		std::vector<uint8_t> _payload;
+		ImageInterface& _image;
 
 		void read_file();
-		void parse_line(const std::string line);
+		void parse_line(const std::string_view &line);
 		bool process_line();
-
 };
 
 #endif /* __HEX_HPP__ */

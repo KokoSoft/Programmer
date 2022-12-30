@@ -6,23 +6,12 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 #include "types.hpp"
 
 #include "Hex.hpp"
-
-Hex::Hex(std::filesystem::path path)
-	: file(path), start_address(0), segment_address(0)
-{
-	if (!file.is_open())
-		throw Exception("File open error.");
-
-	read_file();
-}
-
-void Hex::print() {
-
-}
+#include "Image.hpp"
 
 enum {
 	RT_DATA,				// Data
@@ -34,18 +23,24 @@ enum {
 };
 
 enum {
-	POS_BYTE_CNT,		// Byte count
-	POS_ADDR_H,			// Address
+	POS_BYTE_CNT,			// Byte count
+	POS_ADDR_H,				// Address
 	POS_ADDR_L,
-	POS_TYPE,			// Record type
-	POS_PAYLOAD,		// Start of a payload
-	POS_CHECKSUM = -1,	// Checksum
+	POS_TYPE,				// Record type
+	POS_PAYLOAD,			// Start of a payload
+	POS_CHECKSUM = -1,		// Checksum
 };
 
 constexpr int MIN_LENGTH = 5;
 
-// TODO: Use string view
-void Hex::parse_line(const std::string line) {
+Hex::Hex(const std::filesystem::path& path, ImageInterface& image)
+	: _file(path), _start_address(0), _segment_address(0), _image(image)
+{
+	if (!_file.is_open())
+		throw Exception("File open error.");
+}
+
+void Hex::parse_line(const std::string_view& line) {
 	uint8_t checksum = 0;
 	uint8_t value;
 
@@ -54,8 +49,8 @@ void Hex::parse_line(const std::string line) {
 	if ((line.length() & 1) || (length < MIN_LENGTH))
 		throw Exception("Invalid line length.");
 
-	payload.reserve(length);
-	payload.clear();
+	_payload.reserve(length);
+	_payload.clear();
 
 	for (size_t i = 0; i < length; i++) {
 		auto ret = std::from_chars(line.data() + i * 2, line.data() + i * 2 + 2, value, 16);
@@ -63,25 +58,27 @@ void Hex::parse_line(const std::string line) {
 		if (ret.ec != std::errc())
 			throw Exception("Invalid character in record.");
 
-		payload.push_back(value);
+		_payload.push_back(value);
 		checksum += value;
 	}
 
 	if (checksum)
 		throw Exception("Invalid line checksum.");
 
-	if (payload.size() != (payload[POS_BYTE_CNT] + MIN_LENGTH))
+	if (_payload.size() != (_payload[POS_BYTE_CNT] + MIN_LENGTH))
 		throw Exception("Invalid record size.");
 }
 
 bool Hex::process_line() {
-#define CHECK_SIZE(x) if (payload[POS_BYTE_CNT] != (x)) throw Exception("Invalid record byte count.")
+#define CHECK_SIZE(x) if (_payload[POS_BYTE_CNT] != (x)) throw Exception("Invalid record byte count.")
 
-	switch (payload[POS_TYPE]) {
+	switch (_payload[POS_TYPE]) {
 		case RT_DATA:
 		{
-			uint32_t address = (payload[POS_ADDR_H] << 8) | payload[POS_ADDR_L];
-			sections.process(segment_address + address, std::span<uint8_t>(&payload[POS_PAYLOAD], payload[POS_BYTE_CNT]));
+			uint32_t address = (_payload[POS_ADDR_H] << 8) | _payload[POS_ADDR_L];
+			_image.process(_segment_address + address,
+							 std::as_bytes(std::span(&_payload[POS_PAYLOAD], _payload[POS_BYTE_CNT])));
+
 			std::cout << " RT_DATA";
 			break;
 		}
@@ -94,26 +91,26 @@ bool Hex::process_line() {
 		case RT_EXT_SEG_ADDR:
 			std::cout << " RT_EXT_SEG_ADDR";
 			CHECK_SIZE(2);
-			segment_address = ((payload[POS_PAYLOAD] << 8) | payload[POS_PAYLOAD + 1]) * 16;
+			_segment_address = ((_payload[POS_PAYLOAD] << 8) | _payload[POS_PAYLOAD + 1]) * 16;
 			break;
 
 		case RT_START_SEG_ADDR:
 			std::cout << " RT_START_SEG_ADDR";
 			CHECK_SIZE(4);
-			start_address = ((payload[POS_PAYLOAD + 0] << 8) | payload[POS_PAYLOAD + 1]) * 16 +
-							((payload[POS_PAYLOAD + 2] << 8) | payload[POS_PAYLOAD + 3]);
+			_start_address = ((_payload[POS_PAYLOAD + 0] << 8) | _payload[POS_PAYLOAD + 1]) * 16 +
+							((_payload[POS_PAYLOAD + 2] << 8) | _payload[POS_PAYLOAD + 3]);
 			break;
 
 		case RT_EXT_ADDR:
 			std::cout << " RT_EXT_ADDR";
 			CHECK_SIZE(2);
-			segment_address = (payload[POS_PAYLOAD] << 24) | (payload[POS_PAYLOAD + 1] << 16);
+			_segment_address = (_payload[POS_PAYLOAD] << 24) | (_payload[POS_PAYLOAD + 1] << 16);
 			break;
 
 		case RT_START_ADDR:
 			CHECK_SIZE(4);
-			start_address = (payload[POS_PAYLOAD + 0] << 24) | (payload[POS_PAYLOAD + 1] << 16) |
-							(payload[POS_PAYLOAD + 2] << 8) | payload[POS_PAYLOAD + 3];
+			_start_address = (_payload[POS_PAYLOAD + 0] << 24) | (_payload[POS_PAYLOAD + 1] << 16) |
+							(_payload[POS_PAYLOAD + 2] << 8) | _payload[POS_PAYLOAD + 3];
 			std::cout << " RT_START_ADDR";
 			break;
 
@@ -124,21 +121,17 @@ bool Hex::process_line() {
 	return false;
 }
 
-
 void Hex::read_file() {
 	size_t start;
 	std::string line;
 	bool done = false;
 
-	while (!done && std::getline(file, line)) {
-		std::cout << line;
-
-		// 1. Find colon ':'
+	while (!done && std::getline(_file, line)) {
 		start = line.find(':');
 		if (start == std::string::npos)
 			continue;
 
-		parse_line(line.substr(start + 1));
+		parse_line(std::string_view(line).substr(start + 1));
 		done = process_line();
 
 		std::cout << std::endl;
@@ -148,10 +141,7 @@ void Hex::read_file() {
 		throw Exception("Unexcepted end of file.");
 }
 
-
-
-
-void Sections::process(uint32_t address, std::span<uint8_t> data) {
-	std::cout << " 0x" << std::hex << address << " 0x" << data.size_bytes();
-
+void Hex::read(const std::filesystem::path& path, ImageInterface& image) {
+	Hex parser(path, image);
+	parser.read_file();
 }
