@@ -4,6 +4,7 @@
 
 #include <string>
 #include <exception>
+#include <cassert>
 
 #define _T(x) L ## x
 typedef std::wstring String;

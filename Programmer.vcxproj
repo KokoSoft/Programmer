@@ -76,6 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -90,6 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,6 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,13 +133,15 @@
   <ItemGroup>
     <ClCompile Include="Elf.cpp" />
     <ClCompile Include="Hex.cpp" />
+    <ClCompile Include="Image.cpp" />
     <ClCompile Include="Programmer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Device.hpp" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="Elf.hpp" />
     <ClInclude Include="Hex.hpp" />
-    <ClInclude Include="image.h" />
+    <ClInclude Include="Image.hpp" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="types.hpp" />
   </ItemGroup>

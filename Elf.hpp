@@ -10,14 +10,17 @@
 
 #include <fstream>
 #include <filesystem>
+#include <vector>
+
+#include "Image.hpp"
 
 #include "elf.h"
 
 class Elf;
 
-class Section {
+class ElfSection {
 	public:
-		Section() : header{ 0 } {};
+		ElfSection() : header{ 0 } {};
 
 	protected:
 
@@ -26,7 +29,7 @@ class Section {
 		friend class Elf;
 };
 
-class StringSection : public Section {
+class StringSection : public ElfSection {
 	public:
 		std::string get(unsigned int index);
 };
@@ -35,11 +38,17 @@ class Elf {
 	public:
 		Elf(std::filesystem::path path);
 		void print();
-		void read_section(Section &section, unsigned int index);
+		void read_section(ElfSection &section, unsigned int index);
+
+		// Read firmware image from elf file
+		void read_image(ImageInterface& image);
+		void read_image2(ImageInterface& image);
 
 	protected:
 		std::ifstream file;
 		std::streamsize file_size;
+		std::vector<Elf32_Shdr> sections;
+		std::vector<Elf32_Phdr> programs;
 
 	private:
 		Elf32_Ehdr file_header;
