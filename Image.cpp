@@ -131,12 +131,8 @@ void ImageProgrammer::erase(size_t address) {
 	printf("\terase 0x%06zX - 0x%06zX\n", address, address + ERASE_SIZE - 1);
 }
 
-#include <string>
-#include <sstream>
-#include <iomanip>
-
 void ImageProgrammer::write(size_t address, const std::span<std::byte>& data) {
-	printf("\twrite 0x%06zX - 0x%06zX (%u)\n", address, address + WRITE_SIZE - 1, data.size());
+	printf("\twrite 0x%06zX - 0x%06zX (%zu)\n", address, address + WRITE_SIZE - 1, data.size());
 	/*
 	for (std::byte b : data)
 		printf("%02X", (unsigned char)b);
