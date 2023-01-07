@@ -17,7 +17,10 @@ void network_test2();
 #include <span>
 #include <vector>
 
-#include <winsock.h>
+//#include <winsock.h>
+#include <Winsock2.h> // WSAPool and struct poolfd / WSAPOLLFD
+
+#include "types.hpp"
 
 class SocketException : public std::system_error {
 	public:
@@ -27,48 +30,64 @@ class SocketException : public std::system_error {
 
 class Socket {
 	public:
-		Socket() : _socket(INVALID_SOCKET) {}
+		Socket() : _handle(INVALID_SOCKET) {}
 
-		Socket(int af, int type, int protocol) : _socket(::socket(af, type, protocol))
+		Socket(int af, int type, int protocol) : _handle(::socket(af, type, protocol))
 		{
-			if (_socket == INVALID_SOCKET)
+			if (_handle == INVALID_SOCKET)
 				throw SocketException("socket");
 		}
 
 		void setsockopt(int level, int optname, const void* optval, int optlen) {
-			int ret = ::setsockopt(_socket, level, optname, reinterpret_cast<const char*>(optval), optlen);
+			int ret = ::setsockopt(_handle, level, optname, reinterpret_cast<const char*>(optval), optlen);
 			if (ret == SOCKET_ERROR)
 				throw SocketException("setsockopt");
 		}
 
 		void bind(const void* addr, int addr_len) {
-			int ret = ::bind(_socket, reinterpret_cast<const sockaddr*>(addr), addr_len);
+			int ret = ::bind(_handle, reinterpret_cast<const sockaddr*>(addr), addr_len);
 			if (ret == SOCKET_ERROR)
 				throw SocketException("bind");
 		}
 		
 		~Socket() {
-			if (_socket != INVALID_SOCKET)
-				::closesocket(_socket);
+			if (_handle != INVALID_SOCKET)
+				::closesocket(_handle);
 		}
-	protected:
-		const SOCKET _socket;
 
+		operator SOCKET() const { return _handle; }
+
+	protected:
+		const SOCKET _handle;
 };
 
 class SocketUDP : public Socket {
 	public:
 		SocketUDP() : Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP) {};
 
-		int sendto(const std::span<const std::byte>& buf, int flags, const sockaddr* addr, int addr_len) {
-			int ret = ::sendto(_socket, reinterpret_cast<const char*>(buf.data()), buf.size_bytes(), flags, addr, addr_len);
+		int sendto(const std::span<const std::byte>& buf, int flags, const void* addr, int addr_len) {
+			int ret = ::sendto(_handle, reinterpret_cast<const char*>(buf.data()), buf.size_bytes(),
+							   flags, reinterpret_cast<const sockaddr*>(addr), addr_len);
 			if (ret == SOCKET_ERROR)
 				throw SocketException("sendto");
+
+			if (ret != buf.size_bytes())
+				throw Exception("Truncated sendto");
+
 			return ret;
 		}
-
-		int recvfrom(std::span<std::byte>& buf, int flags, sockaddr* addr, int* addr_len) {
-			int ret = ::recvfrom(_socket, reinterpret_cast<char*>(buf.data()), buf.size_bytes(), flags, addr, addr_len);
+		/*
+		int recvfrom(std::span<std::byte>& buf, int flags, void* addr, int* addr_len) {
+			int ret = ::recvfrom(_handle, reinterpret_cast<char*>(buf.data()), buf.size_bytes(),
+								 flags, reinterpret_cast<sockaddr*>(addr), addr_len);
+			if (ret == SOCKET_ERROR)
+				throw SocketException("recvfrom");
+			return ret;
+		}
+		*/
+		int recvfrom(std::span<std::byte> buf, int flags, void* addr, int* addr_len) {
+			int ret = ::recvfrom(_handle, reinterpret_cast<char*>(buf.data()), buf.size_bytes(),
+								 flags, reinterpret_cast<sockaddr*>(addr), addr_len);
 			if (ret == SOCKET_ERROR)
 				throw SocketException("recvfrom");
 			return ret;
@@ -84,6 +103,28 @@ class SocketUDP : public Socket {
 			Socket::bind(addr, sizeof(*addr));
 		}
 };
+
+class Network {
+	public:
+		/* On Windows poll can only operate on sockets.
+		 * On linux it can operate on any file descriptor.
+		 */
+		static int poll(std::span<struct pollfd> fds, int timeout) {
+			int ret = ::WSAPoll(fds.data(), fds.size(), timeout);
+			if (ret == SOCKET_ERROR)
+				throw SocketException("WSAPoll");
+
+#ifdef _DEBUG
+			for (const struct pollfd& fd : fds)
+				if (fd.revents & POLLNVAL)
+					throw Exception("Invalid descriptor passed to poll.");
+#endif // _DEBUG
+
+			return ret;
+		}
+};
+
+
 
 typedef struct _MIB_IPADDRTABLE MIB_IPADDRTABLE;
 
