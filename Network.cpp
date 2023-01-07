@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <exception>
 #include <memory>
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include <winsock2.h>
 #include <Iphlpapi.h>
 
@@ -41,20 +41,18 @@ void network_test() {
 	//std::array<std::byte, 64> ;
 	std::byte t[24];
 	std::byte tt[240];
-	sockaddr addr;
 	struct sockaddr_in RecvAddr;
 	std::memset(&RecvAddr, 0, sizeof(RecvAddr));
 	RecvAddr.sin_family = AF_INET;
 	RecvAddr.sin_port = htons(666);
 
-	RecvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.128.255");
-	addr.sa_family = AF_INET;
-	sock.sendto(t, 0, (const sockaddr *)&RecvAddr, sizeof(RecvAddr));
+	inet_pton(AF_INET, "192.168.128.255", &RecvAddr.sin_addr);
+	sock.sendto(t, 0, (const sockaddr*)&RecvAddr, sizeof(RecvAddr));
 
 	//RecvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.56.255");
 	//sock.sendto(t, 0, (const sockaddr*)&RecvAddr, sizeof(RecvAddr));
 
-	RecvAddr.sin_addr.S_un.S_addr = inet_addr("255.255.255.255");
+	inet_pton(AF_INET, "255.255.255.255", &RecvAddr.sin_addr);
 	sock.sendto(t, 0, (const sockaddr*)&RecvAddr, sizeof(RecvAddr));
 
 	char ip[INET_ADDRSTRLEN] = {};
@@ -141,13 +139,17 @@ void InterfaceList::print(const MIB_IPADDRTABLE* const pIPAddrTable) {
 	IN_ADDR IPAddr;
 	printf("\tNum Entries: %ld\n", pIPAddrTable->dwNumEntries);
 	for (int i = 0; i < (int)pIPAddrTable->dwNumEntries; i++) {
+		char ip[INET_ADDRSTRLEN] = {};
 		printf("\n\tInterface Index[%d]:\t%ld\n", i, pIPAddrTable->table[i].dwIndex);
 		IPAddr.S_un.S_addr = (u_long)pIPAddrTable->table[i].dwAddr;
-		printf("\tIP Address[%d]:     \t%s\n", i, inet_ntoa(IPAddr));
+		inet_ntop(AF_INET, &IPAddr, ip, sizeof(ip));
+		printf("\tIP Address[%d]:     \t%s\n", i, ip);
 		IPAddr.S_un.S_addr = (u_long)pIPAddrTable->table[i].dwMask;
-		printf("\tSubnet Mask[%d]:    \t%s\n", i, inet_ntoa(IPAddr));
+		inet_ntop(AF_INET, &IPAddr, ip, sizeof(ip));
+		printf("\tSubnet Mask[%d]:    \t%s\n", i, ip);
 		IPAddr.S_un.S_addr = (u_long)pIPAddrTable->table[i].dwBCastAddr;
-		printf("\tBroadCast[%d]:      \t%s (%lX)\n", i, inet_ntoa(IPAddr), pIPAddrTable->table[i].dwBCastAddr);
+		inet_ntop(AF_INET, &IPAddr, ip, sizeof(ip));
+		printf("\tBroadCast[%d]:      \t%s (%lX)\n", i, ip, pIPAddrTable->table[i].dwBCastAddr);
 		printf("\tReassembly size[%d]:\t%ld\n", i, pIPAddrTable->table[i].dwReasmSize);
 		printf("\tType and State[%d]:", i);
 		if (pIPAddrTable->table[i].wType & MIB_IPADDR_PRIMARY)
