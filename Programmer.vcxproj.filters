@@ -36,6 +36,9 @@
     <ClCompile Include="Target.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="DeviceDescriptor.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="protocol.hpp">
@@ -56,7 +59,7 @@
     <ClInclude Include="Image.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Device.hpp">
+    <ClInclude Include="DeviceDescriptor.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="Network.hpp">

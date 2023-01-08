@@ -10,6 +10,7 @@
 #include "Image.hpp"
 #include "Network.hpp"
 #include "Programmer.hpp"
+#include "DeviceDescriptor.hpp"
 #include "Target.hpp"
 
 // TODO: Move this heaer to Network
@@ -23,7 +24,7 @@ int main(int argc, char** argv) {
 		std::cout << "Hello World! " << argc << "\n";
 
 		if (!!(argc > 1)) {
-			Target t(0b00011111101, 128);
+			Target t(DeviceDescriptor::PIC18F97J60 << 5, 128);
 			t.start();
 		} else {
 			NetworkProgrammer prog;

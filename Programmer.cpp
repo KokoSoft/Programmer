@@ -9,6 +9,7 @@
 #include <cassert>
 
 #include "Programmer.hpp"
+#include "DeviceDescriptor.hpp"
 
 NetworkProgrammer::NetworkProgrammer()
 	: _poll{ { _socket, POLLIN} },
@@ -139,6 +140,7 @@ void NetworkProgrammer::discover(Protocol::Operation op) {
 
 	auto info = _rx_buf.get_payload<Protocol::DiscoverReply>(op);
 	printf("Device ID.........: %04X\n", info->device_id.native());
+	printf("Device............: %s rev. %u\n", DeviceDescriptor::find(info->device_id)->name.c_str(), DeviceDescriptor::get_revision(info->device_id));
 	printf("Bootloader version: %u.%02u\n", info->version >> 8, info->version & 0xff);
 	printf("Bootloader address: 0x%06X\n", info->bootloader_address.native());
 }
