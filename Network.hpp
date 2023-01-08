@@ -8,17 +8,10 @@
 #ifndef __NETWORK_HPP__
 #define __NETWORK_HPP__
 
-void network_startup();
-void network_cleanup();
-void network_test();
-void network_test2();
-
 #include <system_error>
 #include <span>
-#include <vector>
 
-//#include <winsock.h>
-#include <Winsock2.h> // WSAPool and struct poolfd / WSAPOLLFD
+#include <Winsock2.h> 
 
 #include "types.hpp"
 
@@ -123,6 +116,9 @@ class Network {
 			return ret;
 		}
 
+		static void startup();
+		static void cleanup();
+
 		template <typename T>
 		static constexpr T big_endian(T val) noexcept {
 			if constexpr (std::endian::native == std::endian::little)
@@ -145,64 +141,6 @@ class Network {
 		using ntohs = convert_endian<uint16_t>;
 		using htonl = convert_endian<uint32_t>;
 		using ntohl = convert_endian<uint32_t>;
-};
-
-
-
-typedef struct _MIB_IPADDRTABLE MIB_IPADDRTABLE;
-
-class InterfaceList {
-	public:
-		InterfaceList();
-		void print();
-
-	protected:
-		typedef struct {
-			DWORD address;
-			DWORD mask;
-		} Interface;
-		std::vector<Interface> _interfaces;
-
-	private:
-		void print(const MIB_IPADDRTABLE* const pIPAddrTable);
-};
-
-//struct SOCKET_ADDRESS;
-typedef struct _SOCKET_ADDRESS SOCKET_ADDRESS;
-typedef struct _IP_ADAPTER_ADDRESSES_LH IP_ADAPTER_ADDRESSES;
-typedef struct _IP_ADAPTER_UNICAST_ADDRESS_LH IP_ADAPTER_UNICAST_ADDRESS;
-
-class InterfaceList2 {
-public:
-	InterfaceList2();
-	void print();
-
-protected:
-	class UnicastAddress {
-		public:
-			UnicastAddress(const IP_ADAPTER_UNICAST_ADDRESS* const address);
-
-			ULONG address;
-			ULONG mask;
-	};
-
-	class Interface {
-		public:
-			Interface(const IP_ADAPTER_ADDRESSES* const adapter);
-
-			std::vector<UnicastAddress> unicast;
-			std::vector<ULONG> dns;
-			std::vector<ULONG> gateway;
-	};
-
-	std::vector<Interface> _interfaces;
-
-	private:
-		static ULONG to_IPv4(const SOCKET_ADDRESS* const address);
-		void printAddr(const SOCKET_ADDRESS* const Address, UINT8 prefix = 0xff);
-		void flags(DWORD f);
-		void type(DWORD f);
-		void print(const IP_ADAPTER_ADDRESSES* const pAddresses);
 };
 
 #endif /* __NETWORK_HPP__ */

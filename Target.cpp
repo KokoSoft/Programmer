@@ -147,7 +147,7 @@ void Target::start() {
 				break;
 
 			case Protocol::OP_ERASE:
-				printf("Erase 0x%06X ", buf.erase.address);
+				printf("Erase 0x%06X ", buf.erase.address.native());
 
 				if ((buf.erase.address % ERASE_SIZE) || (buf.erase.address >= _flash.size())) {
 					buf.header.status = Protocol::STATUS_INV_PARAM;
@@ -163,7 +163,7 @@ void Target::start() {
 				break;
 
 			case Protocol::OP_WRITE:
-				printf("Write to 0x%06X ", buf.write.address);
+				printf("Write to 0x%06X ", buf.write.address.native());
 
 				if ((buf.write.address % WRITE_SIZE) || (buf.write.address >= _flash.size())) {
 					buf.header.status = Protocol::STATUS_INV_PARAM;

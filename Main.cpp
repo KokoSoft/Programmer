@@ -19,7 +19,7 @@
 
 int main(int argc, char** argv) {
 	try {
-		network_startup();
+		Network::startup();
 
 		std::cout << "Hello World! " << argc << "\n";
 
@@ -114,6 +114,6 @@ int main(int argc, char** argv) {
 		printf("Error: %s\n", err.what());
 	}
 
-	network_cleanup();
+	Network::cleanup();
 	return 0;
 }

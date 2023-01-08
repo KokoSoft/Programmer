@@ -9,6 +9,7 @@
 #define __TARGET_HPP__
 
 #include <cinttypes>
+#include <vector>
 
 #include "Network.hpp"
 
