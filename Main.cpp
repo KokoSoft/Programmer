@@ -9,18 +9,36 @@
 #include "Hex.hpp"
 #include "Image.hpp"
 #include "Network.hpp"
+#include "Programmer.hpp"
+#include "Target.hpp"
+
+// TODO: Move this heaer to Network
+#include <ws2tcpip.h>
+
 
 int main(int argc, char** argv) {
 	try {
-
 		network_startup();
 
 		std::cout << "Hello World! " << argc << "\n";
 
-		if (argc > 1)
-			network_test();
-		else
-			network_test2();
+		if (!!(argc > 1)) {
+			Target t(0b00011111101, 128);
+			t.start();
+		} else {
+			NetworkProgrammer prog;
+			//prog.discover_device();
+			IN_ADDR ip;
+			inet_pton(AF_INET, "192.168.56.101", &ip);
+			prog.connect_device(ip.s_addr);
+			prog.read(1024, 1024);
+			prog.erase(1024);
+			prog.read(1024, 1024);
+			std::array<std::byte, 64> tmp;
+			tmp.fill((std::byte)0xAA);
+			prog.write(1024+128, tmp);
+			prog.read(1024, 256);
+		}
 
 		if (0)
 		{
@@ -91,6 +109,7 @@ int main(int argc, char** argv) {
 
 	}
 	catch (std::exception& err) {
+		//::SetConsoleOutputCP(CP_UTF8);
 		printf("Error: %s\n", err.what());
 	}
 
