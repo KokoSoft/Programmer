@@ -16,11 +16,12 @@
 
 #include "Network.hpp"
 #include "Protocol.hpp"
-
-constexpr uint32_t WRITE_SIZE = 64;
+#include "DeviceDescriptor.hpp"
 
 class IProgrammer {
 	public:
+		IProgrammer() : _desciptor(nullptr) {}
+
 		// Read a device's memory
 		virtual std::span<const std::byte> read(uint32_t address, size_t size) = 0;
 
@@ -36,9 +37,14 @@ class IProgrammer {
 		// Calculate a checksum of a device's memory
 		virtual uint32_t checksum(uint32_t address, size_t size) = 0;
 
+		const DeviceDescriptor* get_descriptor() { return _desciptor; }
+
 		// TODO: Move to NetworkProgrammer?
 		enum class Status { Requested, Acked, Done };
 		virtual void on_status(Status status) {}
+
+	protected:
+		const DeviceDescriptor* _desciptor;
 };
 
 class NetworkProgrammer : public IProgrammer {
@@ -69,6 +75,16 @@ class NetworkProgrammer : public IProgrammer {
 		// Calculate a checksum of a device's memory
 		virtual uint32_t checksum(uint32_t address, size_t size);
 
+		struct BootloaderInfo {
+			uint16_t device_id;
+			uint16_t version;
+			uint32_t address;
+		};
+
+		const BootloaderInfo& get_bootloader_info() {
+			return _bootloader;
+		}
+
 	private:
 		static constexpr long long TIMEOUT = 1000;
 
@@ -78,6 +94,8 @@ class NetworkProgrammer : public IProgrammer {
 
 		// Process received frame
 		Result process();
+
+		void check_connection();
 
 		// Send frame and wait for reply
 		void communicate();
@@ -91,6 +109,7 @@ class NetworkProgrammer : public IProgrammer {
 		std::array<struct pollfd, 1> _poll;
 		struct sockaddr_in _tx_address;
 		struct sockaddr_in _rx_address;
+		BootloaderInfo _bootloader;
 
 		class TransmitBuffer {
 			public:
@@ -117,6 +136,7 @@ class NetworkProgrammer : public IProgrammer {
 
 				// Get span of a prepared data. Increment sequence number.
 				const std::span<const std::byte> data();
+
 			private:
 				Protocol::Header* get_header();
 				const Protocol::Header* get_header() const;
@@ -127,7 +147,6 @@ class NetworkProgrammer : public IProgrammer {
 
 		class ReceiveBuffer {
 		public:
-
 			template <typename T>
 			const T* get_payload(Protocol::Operation op) {
 				if (sizeof(Protocol::Header) + sizeof(T) > _size)
@@ -147,9 +166,8 @@ class NetworkProgrammer : public IProgrammer {
 
 				if (get_operation() != op)
 					throw Exception("The buffer contains another data type.");
-
 				
-				return std::span<const std::byte>(_buffer.data() + header_size, _buffer.size() - header_size);
+				return std::span<const std::byte>(_buffer.data() + header_size, _size - header_size);
 			}
 
 			uint8_t get_operation() const { return get_header()->operation; }
@@ -162,11 +180,14 @@ class NetworkProgrammer : public IProgrammer {
 
 			// Set length of a data in the buffer
 			void set_content_length(size_t size);
+
+			static constexpr size_t BUFFER_SIZE = 1500;
+			static constexpr size_t MAX_PAYLOAD = BUFFER_SIZE - sizeof(Protocol::Header);
 		private:
 			const Protocol::Header* get_header() const;
 
 			size_t _size;
-			std::array<std::byte, 1500> _buffer;
+			std::array<std::byte, BUFFER_SIZE> _buffer;
 		} _rx_buf;
 };
 

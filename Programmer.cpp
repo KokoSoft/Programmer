@@ -24,6 +24,11 @@ void NetworkProgrammer::set_address(uint32_t address, uint16_t port) {
 		_socket.set_broadcast(true);
 }
 
+void NetworkProgrammer::check_connection() {
+	if (!_desciptor)
+		throw Exception("Not connected to a target.");
+}
+
 // Send frame and wait for reply
 void NetworkProgrammer::communicate() {
 	using std::chrono::steady_clock;
@@ -132,17 +137,22 @@ void NetworkProgrammer::discover(Protocol::Operation op) {
 	}
 	_tx_address = _rx_address;
 	_socket.set_broadcast(false);
-	//_socket.bind(&_tx_address); Winsock error
 
 	char addr[INET_ADDRSTRLEN] = {};
 	inet_ntop(_rx_address.sin_family, &_rx_address.sin_addr, addr, sizeof(addr));
 	printf("Detected target @ %s:%u\n", addr, Network::ntohs()(_rx_address.sin_port));
 
 	auto info = _rx_buf.get_payload<Protocol::DiscoverReply>(op);
-	printf("Device ID.........: %04X\n", info->device_id.native());
-	printf("Device............: %s rev. %u\n", DeviceDescriptor::find(info->device_id)->name.c_str(), DeviceDescriptor::get_revision(info->device_id));
-	printf("Bootloader version: %u.%02u\n", info->version >> 8, info->version & 0xff);
-	printf("Bootloader address: 0x%06X\n", info->bootloader_address.native());
+	_bootloader.address = info->bootloader_address;
+	_bootloader.version = info->version;
+	_bootloader.device_id = info->device_id;
+
+	_desciptor = DeviceDescriptor::find(_bootloader.device_id);
+
+	printf("Device ID.........: %04X\n", _bootloader.device_id);
+	printf("Device............: %s rev. %u\n", _desciptor->name.c_str(), DeviceDescriptor::get_revision(_bootloader.device_id));
+	printf("Bootloader version: %u.%02u\n", _bootloader.version >> 8, _bootloader.version & 0xff);
+	printf("Bootloader address: 0x%06X\n", _bootloader.address);
 }
 
 // Discover device on network
@@ -178,10 +188,14 @@ void NetworkProgrammer::connect_device(uint32_t ip_address, uint16_t port) {
 
 // Read a device's memory
 std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size) {
+	if (size > _rx_buf.MAX_PAYLOAD)
+		throw Exception("Read size above limit.");
+
+	check_connection();
+
 	auto read = _tx_buf.prepare_payload<Protocol::Read>();
 	read->address = address;
-	// TODO: Limit read length
-	read->length = size;
+	read->length = static_cast<uint16_t>(size);
 
 	communicate();
 	return _rx_buf.get_payload(Protocol::OP_READ);
@@ -189,7 +203,9 @@ std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size
 
 // Write a device's memory
 void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>& buffer) {
-	if ((address % WRITE_SIZE) || (buffer.size_bytes() != WRITE_SIZE))
+	check_connection();
+	
+	if ((address % _desciptor->WRITE_SIZE) || (buffer.size_bytes() != _desciptor->WRITE_SIZE))
 		throw Exception("Write not alligned to sector size!");
 
 	auto write = _tx_buf.prepare_payload<Protocol::Write>();
@@ -201,6 +217,8 @@ void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>
 
 // Erase a device's memory
 void NetworkProgrammer::erase(uint32_t address) {
+	check_connection();
+
 	auto erase = _tx_buf.prepare_payload<Protocol::Erase>();
 	erase->address = address;
 
@@ -209,6 +227,7 @@ void NetworkProgrammer::erase(uint32_t address) {
 
 // Reset a device
 void NetworkProgrammer::reset() {
+	check_connection();
 	_tx_buf.select_operation(Protocol::OP_RESET);
 	communicate();
 }
