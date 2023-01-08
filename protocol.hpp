@@ -31,6 +31,8 @@ namespace Protocol {
 			else
 				return _value;
 		}
+
+		constexpr T native() const noexcept { return *this; }
 	private:
 		T _value;
 	};
@@ -44,7 +46,7 @@ namespace Protocol {
 		OP_NET_CONFIG,	// Reply: DiscoverReply
 		OP_READ,		// Reply: ReadReply with STATUS_INPROGRESS, STATUS_DONE
 		OP_WRITE,		// Reply: Header with STATUS_INPROGRESS, STATUS_DONE
-		OP_ERASE,		// Reply: Header with STATUS_OK
+		OP_ERASE,		// Reply: Header with STATUS_INPROGRESS, STATUS_DONE
 		OP_CHECKSUM,	// Reply: ChecksumReply
 		OP_RESET,		// Reply: Header with STATUS_OK
 	};
@@ -52,10 +54,11 @@ namespace Protocol {
 	enum Status : uint8_t {
 		STATUS_REQUEST,		// It is a request to a device
 		STATUS_OK,
-		STATUS_INV_OP,		// Unknown / unsupported operation
-		STATUS_INV_PARAM,	// Invalid operation parameters
 		STATUS_INPROGRESS,	// Read, Write, Erase, Checksum in progress
 		STATUS_DONE,		// Read, Write, Erase, Checksum done, attached reply structure / Reply with data
+		STATUS_INV_OP,		// Unknown / unsupported operation
+		STATUS_INV_PARAM,	// Invalid operation parameters
+		STATUS_INV_SRC,		// Sender aren't permitted to perform this operation - discover first
 	};
 
 	struct Header {
