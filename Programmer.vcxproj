@@ -141,6 +141,7 @@
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Programmer.cpp" />
+    <ClCompile Include="Target.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Device.hpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="Network.hpp" />
     <ClInclude Include="Programmer.hpp" />
     <ClInclude Include="protocol.hpp" />
+    <ClInclude Include="Target.hpp" />
     <ClInclude Include="types.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
