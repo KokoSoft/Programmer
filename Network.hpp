@@ -122,6 +122,29 @@ class Network {
 
 			return ret;
 		}
+
+		template <typename T>
+		static constexpr T big_endian(T val) noexcept {
+			if constexpr (std::endian::native == std::endian::little)
+				return std::byteswap(val);
+			else
+				return val;
+		}
+
+		template <typename T>
+		struct convert_endian {
+			constexpr T operator()(T val) const noexcept {
+				if constexpr (std::endian::native == std::endian::little)
+					return std::byteswap(val);
+				else
+					return val;
+			}
+		};
+
+		using htons = convert_endian<uint16_t>;
+		using ntohs = convert_endian<uint16_t>;
+		using htonl = convert_endian<uint32_t>;
+		using ntohl = convert_endian<uint32_t>;
 };
 
 

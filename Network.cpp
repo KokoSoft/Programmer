@@ -44,7 +44,7 @@ void network_test() {
 	struct sockaddr_in RecvAddr;
 	std::memset(&RecvAddr, 0, sizeof(RecvAddr));
 	RecvAddr.sin_family = AF_INET;
-	RecvAddr.sin_port = htons(666);
+	RecvAddr.sin_port = Network::htons()(666);
 
 	inet_pton(AF_INET, "192.168.128.255", &RecvAddr.sin_addr);
 	sock.sendto(t, 0, (const sockaddr*)&RecvAddr, sizeof(RecvAddr));
@@ -63,7 +63,7 @@ void network_test() {
 	for (;;) {
 		i = sock.recvfrom(span, 0, (sockaddr*)&RecvAddr, &Sender_addr_len);
 		inet_ntop(AF_INET, &RecvAddr.sin_addr, ip, sizeof(ip));
-		printf("Received %d from %s:%u\n", i, ip, ntohs(RecvAddr.sin_port));
+		printf("Received %d from %s:%u\n", i, ip, Network::ntohs()(RecvAddr.sin_port));
 	}
 }
 
@@ -88,7 +88,7 @@ void network_test2() {
 	char sendMSG[] = "Broadcast message from READER";
 
 	Recv_addr.sin_family = AF_INET;
-	Recv_addr.sin_port = htons(666);
+	Recv_addr.sin_port = Network::htons()(666);
 	Recv_addr.sin_addr.s_addr = INADDR_ANY;
 	sock.bind(&Recv_addr);
 
@@ -98,7 +98,7 @@ void network_test2() {
 		std::span<std::byte> span(recvbuff);
 		int i = sock.recvfrom(span, 0, (sockaddr*)&Sender_addr, &Sender_addr_len);
 		inet_ntop(AF_INET, &Sender_addr.sin_addr, addr, sizeof(addr));
-		printf("Received %d from %s:%u\n", i, addr, ntohs(Sender_addr.sin_port));
+		printf("Received %d from %s:%u\n", i, addr, Network::ntohs()(Sender_addr.sin_port));
 		Sleep(250);
 		std::span<std::byte> span2(&recvbuff[0], i);
 		sock.sendto(span2, 0, (const sockaddr*)&Sender_addr, sizeof(Sender_addr));
