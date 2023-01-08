@@ -12,20 +12,15 @@
 
 NetworkProgrammer::NetworkProgrammer()
 	: _poll{ { _socket, POLLIN} },
-	_tx_address{ AF_INET, htons(Protocol::PORT) }
-{
-}
+	_tx_address{ AF_INET, Network::htons()(Protocol::PORT) }
+{ }
 
+void NetworkProgrammer::set_address(uint32_t address, uint16_t port) {
+	_tx_address.sin_addr.s_addr = address;
+	_tx_address.sin_port = Network::htons()(port);
 
-
-
-// Set UDP port number used for communication
-void NetworkProgrammer::set_port(uint16_t port) {
-	_tx_address.sin_port = htons(port);
-}
-
-void NetworkProgrammer::set_address(uint32_t address) {
-	std::memcpy(&_tx_address.sin_addr, &address, sizeof(_tx_address.sin_addr));
+	if (address == INADDR_BROADCAST)
+		_socket.set_broadcast(true);
 }
 
 // Send frame and wait for reply
@@ -63,10 +58,9 @@ void NetworkProgrammer::communicate() {
 
 // Process received frame
 NetworkProgrammer::Result NetworkProgrammer::process() {
-	sockaddr_in peer_addr;
-	int peer_addr_size = sizeof(peer_addr);
+	int rx_address_size = sizeof(_rx_address);
 
-	const int size = _socket.recvfrom(_rx_buf, 0, &peer_addr, &peer_addr_size);
+	const int size = _socket.recvfrom(_rx_buf, 0, &_rx_address, &rx_address_size);
 	if (size < sizeof(Protocol::Header))
 		throw Exception("A truncated frame was received.");
 
@@ -86,7 +80,6 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 		case Protocol::STATUS_OK:
 			if ((operation != Protocol::OP_DISCOVER) &&
 				(operation != Protocol::OP_NET_CONFIG) &&
-				(operation != Protocol::OP_ERASE) &&
 				(operation != Protocol::OP_RESET))
 				throw Exception("Received unexcepted status from target.");
 			
@@ -95,6 +88,7 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 		case Protocol::STATUS_DONE:
 			if ((operation != Protocol::OP_READ) &&
 				(operation != Protocol::OP_WRITE) &&
+				(operation != Protocol::OP_ERASE) &&
 				(operation != Protocol::OP_CHECKSUM))
 				throw Exception("Received unexcepted status from target.");
 
@@ -103,22 +97,28 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 		case Protocol::STATUS_INPROGRESS:
 			if ((operation != Protocol::OP_READ) &&
 				(operation != Protocol::OP_WRITE) &&
+				(operation != Protocol::OP_ERASE) &&
 				(operation != Protocol::OP_CHECKSUM))
 				throw Exception("Received unexcepted status from target.");
 
 			return Result::ExtendTime;
 
 		case Protocol::STATUS_INV_OP:
-			throw Exception("Operation not supported by target.");
+			throw Exception("Operation not supported by the target.");
 
 		case Protocol::STATUS_INV_PARAM:
-			throw Exception("Target detected an invalid parameter.");
+			throw Exception("The target detected an invalid parameter.");
+
+		case Protocol::STATUS_INV_SRC:
+			throw Exception("The target did not allow this operation.");
 
 		case Protocol::STATUS_REQUEST:
 		default:
 			throw Exception("Target reported an invalid status.");
 	}
 }
+
+#include <ws2tcpip.h>
 
 // Process DiscoverReply from target
 void NetworkProgrammer::discover(Protocol::Operation op) {
@@ -129,19 +129,23 @@ void NetworkProgrammer::discover(Protocol::Operation op) {
 		_socket.set_broadcast(false);
 		throw;
 	}
+	_tx_address = _rx_address;
 	_socket.set_broadcast(false);
+	//_socket.bind(&_tx_address); Winsock error
+
+	char addr[INET_ADDRSTRLEN] = {};
+	inet_ntop(_rx_address.sin_family, &_rx_address.sin_addr, addr, sizeof(addr));
+	printf("Detected target @ %s:%u\n", addr, Network::ntohs()(_rx_address.sin_port));
 
 	auto info = _rx_buf.get_payload<Protocol::DiscoverReply>(op);
-	//set_address();, mo¿e i bind?
-
+	printf("Device ID.........: %04X\n", info->device_id.native());
+	printf("Bootloader version: %u.%02u\n", info->version >> 8, info->version & 0xff);
+	printf("Bootloader address: 0x%06X\n", info->bootloader_address.native());
 }
 
-
-
 // Discover device on network
-void NetworkProgrammer::discover_device() {
-	_socket.set_broadcast(true);
-	set_address(INADDR_BROADCAST);
+void NetworkProgrammer::discover_device(uint16_t port) {
+	set_address(INADDR_BROADCAST, port);
 
 	_tx_buf.select_operation(Protocol::OP_DISCOVER);
 
@@ -149,11 +153,10 @@ void NetworkProgrammer::discover_device() {
 }
 
 // Configure a device's network
-void NetworkProgrammer::configure_device(uint32_t ip_address) {
+void NetworkProgrammer::configure_device(uint32_t ip_address, uint16_t port) {
 	const uint8_t mac[6] = {0xCF, 0x8B, 0xC1, 0xB5, 0xB8, 0x0D};
 
-	_socket.set_broadcast(true);
-	set_address(INADDR_BROADCAST);
+	set_address(INADDR_BROADCAST, port);
 
 	auto conf = _tx_buf.prepare_payload<Protocol::NetworkConfig>();
 	conf->ip_address = ip_address;
@@ -163,9 +166,9 @@ void NetworkProgrammer::configure_device(uint32_t ip_address) {
 }
 
 // Select device
-void NetworkProgrammer::connect_device(uint32_t ip_address) {
-	set_address(ip_address);
-	// TODO: bind?
+void NetworkProgrammer::connect_device(uint32_t ip_address, uint16_t port) {
+	set_address(ip_address, port);
+
 	_tx_buf.select_operation(Protocol::OP_DISCOVER);
 
 	discover();

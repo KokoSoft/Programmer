@@ -46,16 +46,13 @@ class NetworkProgrammer : public IProgrammer {
 		NetworkProgrammer();
 
 		// Discover device on network
-		void discover_device();
+		void discover_device(uint16_t port = Protocol::PORT);
 
 		// Configure a device's network
-		void configure_device(uint32_t ip_address);
+		void configure_device(uint32_t ip_address, uint16_t port = Protocol::PORT);
 
 		// Select device
-		void connect_device(uint32_t ip_address);
-
-		// Set UDP port number used for communication
-		void set_port(uint16_t port);
+		void connect_device(uint32_t ip_address, uint16_t port = Protocol::PORT);
 
 		// Read a device's memory
 		virtual std::span<const std::byte> read(uint32_t address, size_t size);
@@ -73,7 +70,7 @@ class NetworkProgrammer : public IProgrammer {
 		virtual uint32_t checksum(uint32_t address, size_t size);
 
 	private:
-		static constexpr long long TIMEOUT = 100;
+		static constexpr long long TIMEOUT = 1000;
 
 		enum class Result {
 			Ignore, ExtendTime, Done
@@ -85,7 +82,7 @@ class NetworkProgrammer : public IProgrammer {
 		// Send frame and wait for reply
 		void communicate();
 
-		void set_address(uint32_t address);
+		void set_address(uint32_t address, uint16_t port);
 
 		// Process DiscoverReply from target
 		void discover(Protocol::Operation op = Protocol::OP_DISCOVER);
@@ -109,7 +106,7 @@ class NetworkProgrammer : public IProgrammer {
 			
 					get_header()->operation = T::Operation;
 					_size = size;
-					return reinterpret_cast<T*>(_buffer[sizeof(Protocol::Header)]);
+					return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::Header)]);
 				}
 
 				// Select operation without payload
@@ -139,7 +136,7 @@ class NetworkProgrammer : public IProgrammer {
 				if (get_operation() != op)
 					throw Exception("The buffer contains another data type.");
 
-				return reinterpret_cast<T*>(_buffer[sizeof(Protocol::Header)]);
+				return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::Header)]);
 			}
 
 			const std::span<const std::byte> get_payload(Protocol::Operation op) {
