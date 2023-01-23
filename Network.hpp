@@ -12,6 +12,7 @@
 #include <span>
 
 #include <Winsock2.h> 
+#include <Ws2tcpip.h>
 
 #include "types.hpp"
 
@@ -90,6 +91,18 @@ class SocketUDP : public Socket {
 		void set_broadcast(bool broadcast) {
 			BOOL opt = broadcast;
 			setsockopt(SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
+		}
+
+		// Indicates that data should not be fragmented regardless of the local MTU.
+		void set_dont_fragment(bool dont_fragment) {
+			DWORD opt = dont_fragment;
+			setsockopt(IPPROTO_IP, IP_DONTFRAGMENT, &opt, sizeof(opt));
+		}
+
+		// Allows or blocks broadcast reception.
+		void receive_broadcast(bool allow_broadcast) {
+			DWORD opt = allow_broadcast;
+			setsockopt(IPPROTO_IP, IP_RECEIVE_BROADCAST, &opt, sizeof(opt));
 		}
 
 		void bind(const sockaddr_in* addr) {
