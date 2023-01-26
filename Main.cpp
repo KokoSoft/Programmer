@@ -12,6 +12,7 @@
 #include "Programmer.hpp"
 #include "DeviceDescriptor.hpp"
 #include "Target.hpp"
+#include "TargetTester.hpp"
 
 // TODO: Move this heaer to Network
 #include <ws2tcpip.h>
@@ -23,15 +24,24 @@ int main(int argc, char** argv) {
 
 		std::cout << "Hello World! " << argc << "\n";
 
+		IN_ADDR ip;
+		inet_pton(AF_INET, "10.0.1.250", &ip);
+		TargetTester test(ip.s_addr);
+		test.test();
+#if 0
 		if (!!(argc > 1)) {
 			Target t(DeviceDescriptor::PIC18F97J60 << 5, 128);
 			t.start();
 		} else {
 			NetworkProgrammer prog;
-			//prog.discover_device();
+#if 0
+			prog.discover_device();
+#else
 			IN_ADDR ip;
-			inet_pton(AF_INET, "192.168.56.101", &ip);
+			//inet_pton(AF_INET, "192.168.56.101", &ip);
+			inet_pton(AF_INET, "10.0.1.250", &ip);
 			prog.connect_device(ip.s_addr);
+#endif
 			prog.read(1024, 1024);
 			prog.erase(1024);
 			prog.read(1024, 1024);
@@ -40,7 +50,7 @@ int main(int argc, char** argv) {
 			prog.write(1024+128, tmp);
 			prog.read(1024, 256);
 		}
-
+#endif
 		if (0)
 		{
 			Image img;
