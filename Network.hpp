@@ -38,6 +38,13 @@ class Socket {
 				throw SocketException("setsockopt");
 		}
 
+		void set_nonblocking(bool nonblock) {
+			u_long mode = nonblock;
+			int result = ioctlsocket(_handle, FIONBIO, &mode);
+			if (result != NO_ERROR)
+				throw SocketException("ioctlsocket");
+		}
+
 		void bind(const void* addr, int addr_len) {
 			int ret = ::bind(_handle, reinterpret_cast<const sockaddr*>(addr), addr_len);
 			if (ret == SOCKET_ERROR)
@@ -82,8 +89,12 @@ class SocketUDP : public Socket {
 		int recvfrom(std::span<std::byte> buf, int flags, void* addr, int* addr_len) {
 			int ret = ::recvfrom(_handle, reinterpret_cast<char*>(buf.data()), buf.size_bytes(),
 								 flags, reinterpret_cast<sockaddr*>(addr), addr_len);
-			if (ret == SOCKET_ERROR)
-				throw SocketException("recvfrom");
+			if (ret == SOCKET_ERROR) {
+				ret = WSAGetLastError();
+				if (ret != WSAEWOULDBLOCK)
+					throw SocketException("recvfrom");
+				return -1;
+			}
 			return ret;
 		}
 

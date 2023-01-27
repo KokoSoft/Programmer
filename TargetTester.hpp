@@ -12,6 +12,7 @@
 #include <random>
 #include <array>
 #include <chrono>
+#include <queue>
 
 #include "Network.hpp"
 
@@ -39,7 +40,7 @@ class TargetTester {
 			uint8_t RCON;
 			uint8_t STKPTR;
 			uint8_t ESTAT;
-			uint8_t use_me;
+			uint8_t EPKTCNT;
 			uint16_t ERXRDPT;
 			uint16_t ERXWRPT;
 			uint32_t last_seq;
@@ -51,15 +52,22 @@ class TargetTester {
 
 		static constexpr long long TIMEOUT = 1000;
 		static constexpr long long TARGET_HEADERS = 50;
-		static constexpr long long BUFFER_SIZE = 256;
+		static constexpr long long BUFFER_SIZE = 512;
 		static constexpr long long MAX_PAYLOAD = BUFFER_SIZE - TARGET_HEADERS - sizeof(Response);
 		static constexpr long long NET_HEADERS_SIZE = 0x00E + 0x014 + 0x008; // eth + ip + udp
+
+		typedef struct {
+			uint32_t seq;
+			int payload_size;
+			uint8_t command;
+			uint8_t payload[BUFFER_SIZE];
+		} Frame;
 
 		bool received(const void* response, int len);
 		void timeout();
 		void send(bool clear = false);
 
-		void prepare_payload(uint8_t* tx_buf, int size);
+		void prepare_payload(uint8_t* tx_buf, Frame& frame);
 
 		void check_ESTAT(uint8_t ESTAT);
 		void check_RCON(uint8_t RCON);
@@ -76,9 +84,9 @@ class TargetTester {
 
 		Timer _stats_timer;
 		bool _timeout;
+
+		std::queue<Frame> _queue;
 		uint32_t _seq;
-		uint8_t _payload[BUFFER_SIZE];
-		int _payload_size;
 
 		struct {
 			uint32_t rx;

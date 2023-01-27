@@ -56,7 +56,7 @@ TargetTester::TargetTester(uint32_t address)
 
 	if (address == INADDR_BROADCAST)
 		_socket.set_broadcast(true);
-
+	_socket.set_nonblocking(true);
 	_seq = 0;
 }
 
@@ -99,21 +99,32 @@ bool TargetTester::received(const void* response, int len) {
 		return false;
 	}
 
-	if (rx_buf->resp.cur_seq != _seq) {
-		print = true;
-		_stats.seq_mismatch++;
+	Frame& const request = _queue.front();
+	if (rx_buf->resp.cur_seq != request.seq) {
 		printf("Seq mismatch.\n");
-	} else {
-		int payload_size = len - sizeof(Response);
-		if (payload_size == _payload_size) {
-			if (std::memcmp(_payload, rx_buf->payload, payload_size)) {
-				_stats.payload_invalid++;
-				printf("Invalid payload\n");
-			}
-		} else {
-			_stats.payload_size++;
-			printf("Payload size mismatch. Received: %d, expected: %d\n", payload_size, _payload_size);
+		_stats.seq_mismatch++;
+		print = true;
+#if 1
+		while (rx_buf->resp.cur_seq != request.seq) {
+			if ((rx_buf->resp.last_seq + 1) == rx_buf->resp.cur_seq)
+				_stats.lost_tx++;
+			else
+				_stats.lost_rx++;
+
+			_queue.pop();
+			request = _queue.front();
 		}
+#endif
+	}
+	int payload_size = len - sizeof(Response);
+	if (payload_size == request.payload_size) {
+		if (std::memcmp(request.payload, rx_buf->payload, payload_size)) {
+			_stats.payload_invalid++;
+			printf("Invalid payload\n");
+		}
+	} else {
+		_stats.payload_size++;
+		printf("Payload size mismatch. Received: %d, expected: %d\n", payload_size, request.payload_size);
 	}
 
 	if (rx_buf->resp.boot_counter < _last_response.boot_counter) {
@@ -144,7 +155,7 @@ bool TargetTester::received(const void* response, int len) {
 	*/
 
 	std::memcpy(&_last_response, &rx_buf->resp, sizeof(_last_response));
-	if (rx_buf->resp.use_me) {
+	if (request.command) {
 		print = true;
 		printf("Statistics cleared.\n");
 		_last_response.boot_counter = 0;
@@ -156,20 +167,13 @@ bool TargetTester::received(const void* response, int len) {
 	check_RCON(rx_buf->resp.RCON);
 	check_STKPTR(rx_buf->resp.STKPTR);
 
-	if (_timeout) {
-		if ((rx_buf->resp.last_seq + 1) == rx_buf->resp.cur_seq)
-			_stats.lost_tx++;
-		else
-			_stats.lost_rx++;
-	}
-
-	if (print) {
-		printf("Tx: len = %u, seq = %u. ", _payload_size, _seq);
-		printf("Rx: last seq: %u, seq: %u, boot: %u, arp: %u, udp: %u, Read: 0x%04X, Write: 0x%04X, use_me: %u\n",
-			rx_buf->resp.last_seq, rx_buf->resp.cur_seq, rx_buf->resp.boot_counter, rx_buf->resp.received_arp,
-			rx_buf->resp.received_udp, rx_buf->resp.ERXRDPT, rx_buf->resp.ERXWRPT, rx_buf->resp.use_me);
-	}
 	if (print || _stats_timer.check()) {
+	//if (print) {
+		printf("Tx: len = %u, seq = %u. ", request.payload_size, request.seq);
+		printf("Rx: last seq: %u, seq: %u, boot: %u, arp: %u, udp: %u, Read: 0x%04X, Write: 0x%04X, EPKTCNT: %u\n",
+			rx_buf->resp.last_seq, rx_buf->resp.cur_seq, rx_buf->resp.boot_counter, rx_buf->resp.received_arp,
+			rx_buf->resp.received_udp, rx_buf->resp.ERXRDPT, rx_buf->resp.ERXWRPT, rx_buf->resp.EPKTCNT);
+	//}
 		printf("Stats: Tx: %u, Rx: %u, lost rx: %u, lost tx: %u, timeout: %u, pld size: %u, pld inv: %u, seq inv: %u\n", _stats.tx, _stats.rx, _stats.lost_rx,
 			   _stats.lost_tx, _stats.timeout, _stats.payload_size, _stats.payload_invalid, _stats.seq_mismatch);
 
@@ -195,14 +199,15 @@ bool TargetTester::received(const void* response, int len) {
 #endif
 	}
 	_timeout = false;
-
+	_queue.pop();
 	return true;
 }
 
 void TargetTester::timeout() {
 	_timeout = true;
 	_stats.timeout++;
-	printf("Receive timeout!.\n");
+	const Frame& request = _queue.front();
+	printf("Receive timeout! Payload size: %u.\n", request.payload_size);
 	send();
 }
 
@@ -214,26 +219,39 @@ void TargetTester::send(bool clear) {
 
 
 	int len = _rand_distr(_rand_eng) % MAX_PAYLOAD;
-	len &= ~1;
+	//len = MAX_PAYLOAD;
+	//len &= ~1;
 
 	_seq++;
-	if (!_seq) _seq++;
+	_seq &= 0x7FFFFFFF;
 
-	tx_buf.reg.seq = clear ? 0 : _seq;
-	prepare_payload(tx_buf.payload, len);
+	Frame& frame = _queue.emplace();
+	frame.command = 0;
+
+	if (clear) {
+		_seq |= 0x80000000;
+		frame.command |= 0x01;
+	}
+
+	frame.seq = _seq;
+	frame.payload_size = len;
+
+	tx_buf.reg.seq = _seq;
+	prepare_payload(tx_buf.payload, frame);
 	_socket.sendto(std::span<std::byte>(reinterpret_cast<std::byte*>(&tx_buf),
 				   len + sizeof(Request)), 0, &_tx_address, sizeof(_tx_address));
+
 	_stats.tx++;
 	_stats.tx_total_bytes += len + sizeof(Request) + NET_HEADERS_SIZE;
 }
 
-void TargetTester::prepare_payload(uint8_t* tx_buf, int size) {
-	uint8_t* check_buf = _payload;
+void TargetTester::prepare_payload(uint8_t* tx_buf, Frame& frame) {
+	uint8_t* check_buf = frame.payload;
 	uint8_t mask = 0x5A;
+	int size = frame.payload_size;
 
-	assert(size <= MAX_PAYLOAD);
+	assert(size <= sizeof(frame.payload));
 
-	_payload_size = size;
 	while (size) {
 		auto rand = _rand_distr(_rand_eng);
 		for (int i = 0; (i < sizeof(rand)) && size; i++) {
@@ -252,6 +270,7 @@ void TargetTester::test() {
 	using std::chrono::milliseconds;
 	using std::chrono::duration_cast;
 	using std::chrono::duration;
+	constexpr size_t QUEUE_FILL_LEVEL = 5;
 
 	int rx_address_size;
 	std::byte buf[BUFFER_SIZE];
@@ -259,8 +278,11 @@ void TargetTester::test() {
 	_stats.start_time = steady_clock::now();
 
 	send(true);
-
+	int imax = 0;
 	while (1) {
+		while (_queue.size() < QUEUE_FILL_LEVEL)
+			send(false);
+
 		auto now = steady_clock::now();
 		auto deadline = now + milliseconds(TIMEOUT);
 		for (; deadline > now; now = steady_clock::now()) {
@@ -269,14 +291,23 @@ void TargetTester::test() {
 
 			if (ret && (_poll[0].revents & POLLIN)) {
 				rx_address_size = sizeof(_rx_address);
-				const int size = _socket.recvfrom(buf, 0, &_rx_address, &rx_address_size);
-				if (received(buf, size)) {
-					deadline = steady_clock::now() + milliseconds(TIMEOUT);
-					send();
+				int i = 0;
+				for (;;) {
+					const int size = _socket.recvfrom(buf, 0, &_rx_address, &rx_address_size);
+					if (size < 0)
+						break;
+					i++;
+
+					if (received(buf, size)) {
+						while (_queue.size() < QUEUE_FILL_LEVEL)
+							send(false);
+						deadline = steady_clock::now() + milliseconds(TIMEOUT);
+					}
 				}
+				if (i > imax) imax = i;
 			}
 		}
-
+		printf("imax = %d\n", imax);
 		timeout();
 	}
 }
