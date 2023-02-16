@@ -14,7 +14,10 @@
 NetworkProgrammer::NetworkProgrammer()
 	: _poll{ { _socket, POLLIN} },
 	_tx_address{ AF_INET, Network::htons()(Protocol::PORT) }
-{ }
+{ 
+	_socket.set_dont_fragment(true);
+	_socket.receive_broadcast(false);
+}
 
 void NetworkProgrammer::set_address(uint32_t address, uint16_t port) {
 	_tx_address.sin_addr.s_addr = address;
