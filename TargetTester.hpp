@@ -8,6 +8,9 @@
 #ifndef __TARGETTESTER_HPP__
 #define __TARGETTESTER_HPP__
 
+/* Tester configuration */
+constexpr bool TX_THROUGHPUT_TEST = false; /* Target sends a response frame indefinitely. Transmitter throughput test */
+
 #include <cstdint>
 #include <random>
 #include <array>
@@ -52,9 +55,9 @@ class TargetTester {
 
 		static constexpr long long TIMEOUT = 1000;
 		static constexpr long long TARGET_HEADERS = 50;
-		static constexpr long long BUFFER_SIZE = 512;
+		static constexpr long long BUFFER_SIZE = TX_THROUGHPUT_TEST ? 1024 : 512;
 		static constexpr long long MAX_PAYLOAD = BUFFER_SIZE - TARGET_HEADERS - sizeof(Response);
-		static constexpr long long NET_HEADERS_SIZE = 0x00E + 0x014 + 0x008; // eth + ip + udp
+		static constexpr long long NET_HEADERS_SIZE = 24 + 0x00E + 0x014 + 0x008; // phy + eth + ip + udp
 
 		typedef struct {
 			uint32_t seq;

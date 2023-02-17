@@ -164,7 +164,8 @@ bool TargetTester::received(const void* response, int len) {
 	}
 
 	check_ESTAT(rx_buf->resp.ESTAT);
-	check_RCON(rx_buf->resp.RCON);
+	if (!TX_THROUGHPUT_TEST)
+		check_RCON(rx_buf->resp.RCON);
 	check_STKPTR(rx_buf->resp.STKPTR);
 
 	if (print || _stats_timer.check()) {
@@ -199,7 +200,8 @@ bool TargetTester::received(const void* response, int len) {
 #endif
 	}
 	_timeout = false;
-	_queue.pop();
+	if (!TX_THROUGHPUT_TEST)
+		_queue.pop();
 	return true;
 }
 
@@ -219,7 +221,8 @@ void TargetTester::send(bool clear) {
 
 
 	int len = _rand_distr(_rand_eng) % MAX_PAYLOAD;
-	//len = MAX_PAYLOAD;
+	if (TX_THROUGHPUT_TEST)
+		len = MAX_PAYLOAD;
 	//len &= ~1;
 
 	_seq++;
