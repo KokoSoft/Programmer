@@ -70,7 +70,7 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 	int rx_address_size = sizeof(_rx_address);
 
 	const int size = _socket.recvfrom(_rx_buf, 0, &_rx_address, &rx_address_size);
-	if (size < sizeof(Protocol::Header))
+	if (size < sizeof(Protocol::ReplyHeader))
 		throw Exception("A truncated frame was received.");
 
 	_rx_buf.set_content_length(size);
@@ -87,6 +87,7 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 
 	switch (_rx_buf.get_status()) {
 		case Protocol::STATUS_OK:
+#if 0
 			if ((operation != Protocol::OP_DISCOVER) &&
 				(operation != Protocol::OP_NET_CONFIG) &&
 				(operation != Protocol::OP_RESET))
@@ -100,13 +101,15 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 				(operation != Protocol::OP_ERASE) &&
 				(operation != Protocol::OP_CHECKSUM))
 				throw Exception("Received unexcepted status from target.");
-
+#endif
 			return Result::Done;
 
 		case Protocol::STATUS_INPROGRESS:
 			if ((operation != Protocol::OP_READ) &&
 				(operation != Protocol::OP_WRITE) &&
 				(operation != Protocol::OP_ERASE) &&
+				(operation != Protocol::OP_ERASE_WRITE) &&
+				(operation != Protocol::OP_CHIP_ERASE) &&
 				(operation != Protocol::OP_CHECKSUM))
 				throw Exception("Received unexcepted status from target.");
 
@@ -130,7 +133,7 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 #include <ws2tcpip.h>
 
 // Process DiscoverReply from target
-void NetworkProgrammer::discover(Protocol::Operation op) {
+void NetworkProgrammer::process_discover(Protocol::Operation op) {
 	try {
 		communicate();
 	}
@@ -164,7 +167,7 @@ void NetworkProgrammer::discover_device(uint16_t port) {
 
 	_tx_buf.select_operation(Protocol::OP_DISCOVER);
 
-	discover();
+	process_discover();
 }
 
 // Configure a device's network
@@ -176,8 +179,15 @@ void NetworkProgrammer::configure_device(uint32_t ip_address, uint16_t port) {
 	auto conf = _tx_buf.prepare_payload<Protocol::NetworkConfig>();
 	conf->ip_address = ip_address;
 	std::memcpy(&conf->mac_address, mac, sizeof(mac));
-
-	discover(Protocol::OP_NET_CONFIG);
+#if 0
+	conf->mac_address_eth[0] = mac[4];
+	conf->mac_address_eth[1] = mac[5];
+	conf->mac_address_eth[2] = mac[2];
+	conf->mac_address_eth[3] = mac[3];
+	conf->mac_address_eth[4] = mac[0];
+	conf->mac_address_eth[5] = mac[1];
+#endif
+	process_discover(Protocol::OP_NET_CONFIG);
 }
 
 // Select device
@@ -186,7 +196,7 @@ void NetworkProgrammer::connect_device(uint32_t ip_address, uint16_t port) {
 
 	_tx_buf.select_operation(Protocol::OP_DISCOVER);
 
-	discover();
+	process_discover();
 }
 
 // Read a device's memory
@@ -196,9 +206,7 @@ std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size
 
 	check_connection();
 
-	auto read = _tx_buf.prepare_payload<Protocol::Read>();
-	read->address = address;
-	read->length = static_cast<uint16_t>(size);
+	_tx_buf.select_operation(Protocol::OP_READ, address, static_cast<uint16_t>(size));
 
 	communicate();
 	return _rx_buf.get_payload(Protocol::OP_READ);
@@ -211,6 +219,7 @@ void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>
 	if ((address % _desciptor->WRITE_SIZE) || (buffer.size_bytes() != _desciptor->WRITE_SIZE))
 		throw Exception("Write not alligned to sector size!");
 
+	//_tx_buf.select_operation(Protocol::OP_WRITE, address, buffer.size_bytes());
 	auto write = _tx_buf.prepare_payload<Protocol::Write>();
 	write->address = address;
 	std::memcpy(write->data, buffer.data(), sizeof(write->data));
@@ -222,9 +231,7 @@ void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>
 void NetworkProgrammer::erase(uint32_t address) {
 	check_connection();
 
-	auto erase = _tx_buf.prepare_payload<Protocol::Erase>();
-	erase->address = address;
-
+	_tx_buf.select_operation(Protocol::OP_ERASE, address);
 	communicate();
 }
 
@@ -237,9 +244,7 @@ void NetworkProgrammer::reset() {
 
 // Calculate a checksum of a device's memory
 uint32_t NetworkProgrammer::checksum(uint32_t address, size_t size) {
-	auto checksum = _tx_buf.prepare_payload<Protocol::Checksum>();
-	checksum->address = address;
-
+	_tx_buf.select_operation(Protocol::OP_CHECKSUM, address, size);
 	communicate();
 
 	auto result = _rx_buf.get_payload<Protocol::ChecksumReply>(Protocol::OP_CHECKSUM);
@@ -257,18 +262,21 @@ NetworkProgrammer::TransmitBuffer::TransmitBuffer()
 }
 
 // Select operation without payload
-void NetworkProgrammer::TransmitBuffer::select_operation(Protocol::Operation op) {
-	get_header()->operation = op;
-	_size = sizeof(Protocol::Header);
+void NetworkProgrammer::TransmitBuffer::select_operation(Protocol::Operation op, uint32_t address, uint16_t length) {
+	auto header = get_header();
+	header->operation = op;
+	header->address = address;
+	header->length = length;
+	_size = sizeof(Protocol::RequestHeader);
 }
 
-Protocol::Header* NetworkProgrammer::TransmitBuffer::get_header() {
-	static_assert(std::tuple_size<decltype(_buffer)>::value >= sizeof(Protocol::Header), "Tx buffer too small");
-	return reinterpret_cast<Protocol::Header*>(_buffer.data());
+Protocol::RequestHeader* NetworkProgrammer::TransmitBuffer::get_header() {
+	static_assert(std::tuple_size<decltype(_buffer)>::value >= sizeof(Protocol::RequestHeader), "Tx buffer too small");
+	return reinterpret_cast<Protocol::RequestHeader*>(_buffer.data());
 }
-const Protocol::Header* NetworkProgrammer::TransmitBuffer::get_header() const {
-	static_assert(std::tuple_size<decltype(_buffer)>::value >= sizeof(Protocol::Header), "Tx buffer too small");
-	return reinterpret_cast<const Protocol::Header*>(_buffer.data());
+const Protocol::RequestHeader* NetworkProgrammer::TransmitBuffer::get_header() const {
+	static_assert(std::tuple_size<decltype(_buffer)>::value >= sizeof(Protocol::RequestHeader), "Tx buffer too small");
+	return reinterpret_cast<const Protocol::RequestHeader*>(_buffer.data());
 }
 
 // Get span of a prepared data. Increment sequence number.
@@ -279,9 +287,9 @@ const std::span<const std::byte> NetworkProgrammer::TransmitBuffer::data() {
 
 /* ReceiveBuffer */
 
-const Protocol::Header* NetworkProgrammer::ReceiveBuffer::get_header() const {
-	// TODO: assert(_size >= sizeof(Protocol::Header), "Rx buffer too small");
-	return reinterpret_cast<const Protocol::Header*>(_buffer.data());
+const Protocol::ReplyHeader* NetworkProgrammer::ReceiveBuffer::get_header() const {
+	// TODO: assert(_size >= sizeof(Protocol::ReplyHeader), "Rx buffer too small");
+	return reinterpret_cast<const Protocol::ReplyHeader*>(_buffer.data());
 }
 
 // Set length of a data in the buffer

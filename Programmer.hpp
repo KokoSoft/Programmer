@@ -103,7 +103,7 @@ class NetworkProgrammer : public IProgrammer {
 		void set_address(uint32_t address, uint16_t port);
 
 		// Process DiscoverReply from target
-		void discover(Protocol::Operation op = Protocol::OP_DISCOVER);
+		void process_discover(Protocol::Operation op = Protocol::OP_DISCOVER);
 
 		SocketUDP _socket;
 		std::array<struct pollfd, 1> _poll;
@@ -120,16 +120,16 @@ class NetworkProgrammer : public IProgrammer {
 					T::Operation;
 				}
 				T* prepare_payload() {
-					constexpr auto size = sizeof(Protocol::Header) + sizeof(T);
+					constexpr auto size = sizeof(Protocol::RequestHeader) + sizeof(T);
 					static_assert(std::tuple_size<decltype(_buffer)>::value >= size, "Tx buffer too small");
 			
 					get_header()->operation = T::Operation;
 					_size = size;
-					return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::Header)]);
+					return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::RequestHeader)]);
 				}
 
 				// Select operation without payload
-				void select_operation(Protocol::Operation op);
+				void select_operation(Protocol::Operation op, uint32_t address = 0, uint16_t length = 0);
 
 				uint8_t get_operation() const { return get_header()->operation; }
 				uint8_t get_sequence() const { return get_header()->seq; }
@@ -138,8 +138,8 @@ class NetworkProgrammer : public IProgrammer {
 				const std::span<const std::byte> data();
 
 			private:
-				Protocol::Header* get_header();
-				const Protocol::Header* get_header() const;
+				Protocol::RequestHeader* get_header();
+				const Protocol::RequestHeader* get_header() const;
 
 				size_t _size;
 				std::array<std::byte, 128> _buffer;
@@ -149,17 +149,17 @@ class NetworkProgrammer : public IProgrammer {
 		public:
 			template <typename T>
 			const T* get_payload(Protocol::Operation op) {
-				if (sizeof(Protocol::Header) + sizeof(T) > _size)
+				if (sizeof(Protocol::ReplyHeader) + sizeof(T) > _size)
 					throw Exception("Not enough data in the buffer.");
 
 				if (get_operation() != op)
 					throw Exception("The buffer contains another data type.");
 
-				return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::Header)]);
+				return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::ReplyHeader)]);
 			}
 
 			const std::span<const std::byte> get_payload(Protocol::Operation op) {
-				constexpr auto header_size = sizeof(Protocol::Header);
+				constexpr auto header_size = sizeof(Protocol::ReplyHeader);
 
 				if (header_size >= _size)
 					throw Exception("No payload available.");
@@ -181,10 +181,10 @@ class NetworkProgrammer : public IProgrammer {
 			// Set length of a data in the buffer
 			void set_content_length(size_t size);
 
-			static constexpr size_t BUFFER_SIZE = 1500;
-			static constexpr size_t MAX_PAYLOAD = BUFFER_SIZE - sizeof(Protocol::Header);
+			static constexpr size_t BUFFER_SIZE = 1500; // TODO: To nie jest prawda. Musisz uwzglêdniæ jeszcze nag³ówek IP i UDP
+			static constexpr size_t MAX_PAYLOAD = BUFFER_SIZE - sizeof(Protocol::ReplyHeader);
 		private:
-			const Protocol::Header* get_header() const;
+			const Protocol::ReplyHeader* get_header() const;
 
 			size_t _size;
 			std::array<std::byte, BUFFER_SIZE> _buffer;

@@ -18,23 +18,32 @@
 #include <ws2tcpip.h>
 
 
+#define TESTER
+
 int main(int argc, char** argv) {
 	try {
 		Network::startup();
 
 		std::cout << "Hello World! " << argc << "\n";
 
+#ifdef TESTER
 		IN_ADDR ip;
-		inet_pton(AF_INET, "10.0.1.250", &ip);
+		inet_pton(AF_INET, "10.11.12.13", &ip);
 		TargetTester test(ip.s_addr);
 		test.test();
-#if 0
+
+#else
 		if (!!(argc > 1)) {
 			Target t(DeviceDescriptor::PIC18F97J60 << 5, 128);
 			t.start();
 		} else {
 			NetworkProgrammer prog;
-#if 0
+#ifdef NET_CONFIG
+			IN_ADDR ip;
+			//inet_pton(AF_INET, "192.168.56.101", &ip);
+			inet_pton(AF_INET, "10.11.12.13", &ip);
+			prog.configure_device(ip.s_addr);
+#elif DISCOVER
 			prog.discover_device();
 #else
 			IN_ADDR ip;

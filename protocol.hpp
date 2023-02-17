@@ -47,21 +47,35 @@ namespace Protocol {
 		OP_READ,		// Reply: ReadReply with STATUS_INPROGRESS, STATUS_DONE
 		OP_WRITE,		// Reply: Header with STATUS_INPROGRESS, STATUS_DONE
 		OP_ERASE,		// Reply: Header with STATUS_INPROGRESS, STATUS_DONE
-		OP_CHECKSUM,	// Reply: ChecksumReply
 		OP_RESET,		// Reply: Header with STATUS_OK
+		OP_ERASE_WRITE,	// Reply: Header with STATUS_INPROGRESS, STATUS_OK
+		OP_CHIP_ERASE,	// Reply: Header with STATUS_INPROGRESS, STATUS_OK
+		OP_CHECKSUM,	// Reply: ChecksumReply
 	};
+
 
 	enum Status : uint8_t {
 		STATUS_REQUEST,		// It is a request to a device
 		STATUS_OK,
 		STATUS_INPROGRESS,	// Read, Write, Erase, Checksum in progress
-		STATUS_DONE,		// Read, Write, Erase, Checksum done, attached reply structure / Reply with data
+		//STATUS_DONE,		// Read, Write, Erase, Checksum done, attached reply structure / Reply with data
 		STATUS_INV_OP,		// Unknown / unsupported operation
 		STATUS_INV_PARAM,	// Invalid operation parameters
 		STATUS_INV_SRC,		// Sender aren't permitted to perform this operation - discover first
+		STATUS_INV_ADDR,	// Forbidden operation address
+		STATUS_PKT_SIZE,	// Invalid packet size
 	};
 
-	struct Header {
+	struct RequestHeader {
+		be8_t version;
+		be8_t seq;
+		be8_t operation;
+		be8_t status;
+		be32_t address;	// Starting address
+		be16_t length;	// Length of data to read/write
+	};
+
+	struct ReplyHeader {
 		be8_t version;
 		be8_t seq;
 		be8_t operation;
@@ -70,20 +84,15 @@ namespace Protocol {
 
 	struct DiscoverReply {
 		be16_t version;
-		be16_t device_id;
 		be32_t bootloader_address;
+		be16_t device_id;
 	};
 
 	struct NetworkConfig {
 		static constexpr uint8_t Operation = OP_NET_CONFIG;
-		uint32_t ip_address;
 		uint8_t mac_address[6];
-	};
-
-	struct Read {
-		static constexpr uint8_t Operation = OP_READ;
-		be32_t address;	// Starting address
-		be16_t length;	// Length of data to read
+		uint32_t ip_address;
+		//uint8_t mac_address_eth[6];
 	};
 
 	struct ReadReply {
@@ -94,17 +103,6 @@ namespace Protocol {
 		static constexpr uint8_t Operation = OP_WRITE;
 		be32_t address;
 		be8_t data[64];
-	};
-
-	struct Erase {
-		static constexpr uint8_t Operation = OP_ERASE;
-		be32_t address;	// Block size is 1024 bytes
-	};
-
-	struct Checksum {
-		static constexpr uint8_t Operation = OP_CHECKSUM;
-		be32_t address;
-		be32_t length;
 	};
 
 	struct ChecksumReply {
