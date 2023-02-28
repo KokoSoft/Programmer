@@ -10,6 +10,7 @@
 
 /* Tester configuration */
 constexpr bool TX_THROUGHPUT_TEST = false; /* Target sends a response frame indefinitely. Transmitter throughput test */
+constexpr bool CHECKSUM_BYTE_SUPPORT = false; /* Target sends a response frame indefinitely. Transmitter throughput test */
 
 #include <cstdint>
 #include <random>
@@ -54,10 +55,13 @@ class TargetTester {
 		} Response;
 
 		static constexpr long long TIMEOUT = 1000;
-		static constexpr long long TARGET_HEADERS = 50;
+		static constexpr long long TARGET_HEADERS = 50; // 14 + 20 + 8 + 7
 		static constexpr long long BUFFER_SIZE = TX_THROUGHPUT_TEST ? 1024 : 512;
 		static constexpr long long MAX_PAYLOAD = BUFFER_SIZE - TARGET_HEADERS - sizeof(Response);
-		static constexpr long long NET_HEADERS_SIZE = 24 + 0x00E + 0x014 + 0x008; // phy + eth + ip + udp
+		// Preamble + start delimiter + inter packet gap
+		static constexpr long long ETH_LAYER1_SIZE = 7 + 1 + 12;
+		// phy + eth + ip + udp + frame check sequence
+		static constexpr long long NET_HEADERS_SIZE = ETH_LAYER1_SIZE + 0x00E + 0x014 + 0x008 + 4;
 
 		typedef struct {
 			uint32_t seq;

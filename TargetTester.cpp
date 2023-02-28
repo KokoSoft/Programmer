@@ -105,6 +105,9 @@ bool TargetTester::received(const void* response, int len) {
 		_stats.seq_mismatch++;
 		print = true;
 #if 1
+		// TODO: Generalnie to to wybucha gdy przypadkiem zostawisz wgrany firmware, który w pêtli wysy³a jedn¹ odpowiedŸ
+		// Robimy w pêtli pop, a¿ wyczyœcimy queue i jest problem. Tylko teraz jest 01:40 i nie mam si³y
+		// Wymyœlaæ rozwi¹zania na to. Popraw to proszê!
 		while (rx_buf->resp.cur_seq != request.seq) {
 			if ((rx_buf->resp.last_seq + 1) == rx_buf->resp.cur_seq)
 				_stats.lost_tx++;
@@ -223,7 +226,9 @@ void TargetTester::send(bool clear) {
 	int len = _rand_distr(_rand_eng) % MAX_PAYLOAD;
 	if (TX_THROUGHPUT_TEST)
 		len = MAX_PAYLOAD;
-	//len &= ~1;
+
+	if (!CHECKSUM_BYTE_SUPPORT)
+		len &= ~1;
 
 	_seq++;
 	_seq &= 0x7FFFFFFF;
