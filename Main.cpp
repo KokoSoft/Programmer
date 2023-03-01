@@ -13,6 +13,7 @@
 #include "DeviceDescriptor.hpp"
 #include "Target.hpp"
 #include "TargetTester.hpp"
+#include "CarPanel.hpp"
 
 // TODO: Move this heaer to Network
 #include <ws2tcpip.h>
@@ -28,9 +29,9 @@ int main(int argc, char** argv) {
 
 #ifdef TESTER
 		IN_ADDR ip;
-		inet_pton(AF_INET, "10.11.12.13", &ip);
-		TargetTester test(ip.s_addr);
-		test.test();
+		inet_pton(AF_INET, "10.0.1.130", &ip);
+		CarPanel test(ip.s_addr);
+		test.animate();
 
 #else
 		if (!!(argc > 1)) {

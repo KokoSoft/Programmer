@@ -143,6 +143,7 @@
     <ClCompile Include="Programmer.cpp" />
     <ClCompile Include="Target.cpp" />
     <ClCompile Include="DeviceDescriptor.cpp" />
+    <ClCompile Include="CarPanel.cpp" />
     <ClCompile Include="TargetTester.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -155,6 +156,7 @@
     <ClInclude Include="Programmer.hpp" />
     <ClInclude Include="protocol.hpp" />
     <ClInclude Include="Target.hpp" />
+    <ClInclude Include="CarPanel.hpp" />
     <ClInclude Include="TargetTester.hpp" />
     <ClInclude Include="types.hpp" />
   </ItemGroup>
