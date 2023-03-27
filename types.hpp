@@ -19,4 +19,15 @@
 typedef std::wstring String;
 #define Exception(x) std::runtime_error(x)
 
+
+#ifdef _MSC_VER
+#define PACKED_STRUCT_BEGIN	__pragma(pack(push, 1))
+#define PACKED_STRUCT_END	__pragma(pack(pop))
+#elif defined(__GNUC__)
+#define PACKED_STRUCT_BEGIN	__attribute__ ((__packed__))
+#define PACKED_STRUCT_END
+#else
+#error 'Declare PACKED_STRUCT_* for this compiler.'
+#endif
+
 #endif /* __TYPES_HPP__ */

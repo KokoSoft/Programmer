@@ -40,6 +40,7 @@ namespace Protocol {
 	typedef uint8_t be8_t;
 	typedef bigendian<uint16_t> be16_t;
 	typedef bigendian<uint32_t> be32_t;
+	typedef uint16_t le16_t;
 
 	enum Operation : uint8_t {
 		OP_DISCOVER,	// Reply: DiscoverReply
@@ -66,7 +67,8 @@ namespace Protocol {
 		STATUS_PKT_SIZE,	// Invalid packet size
 	};
 
-	struct RequestHeader {
+	PACKED_STRUCT_BEGIN
+		struct RequestHeader {
 		be8_t version;
 		be8_t seq;
 		be8_t operation;
@@ -74,26 +76,33 @@ namespace Protocol {
 		be32_t address;	// Starting address
 		be16_t length;	// Length of data to read/write
 	};
+	PACKED_STRUCT_END
 
-	struct ReplyHeader {
+	PACKED_STRUCT_BEGIN
+		struct ReplyHeader {
 		be8_t version;
 		be8_t seq;
 		be8_t operation;
 		be8_t status;
 	};
+	PACKED_STRUCT_END
 
+	PACKED_STRUCT_BEGIN
 	struct DiscoverReply {
 		be16_t version;
 		be32_t bootloader_address;
-		be16_t device_id;
+		le16_t device_id;
 	};
+	PACKED_STRUCT_END
 
+	PACKED_STRUCT_BEGIN
 	struct NetworkConfig {
 		static constexpr uint8_t Operation = OP_NET_CONFIG;
 		uint8_t mac_address[6];
 		uint32_t ip_address;
 		//uint8_t mac_address_eth[6];
 	};
+	PACKED_STRUCT_END
 
 	struct ReadReply {
 		be8_t data[1];
