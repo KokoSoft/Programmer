@@ -153,12 +153,12 @@ void NetworkProgrammer::process_discover(Protocol::Operation op) {
 	_bootloader.version = info->version;
 	_bootloader.device_id = info->device_id;
 
-	_desciptor = DeviceDescriptor::find(_bootloader.device_id);
-
 	printf("Device ID.........: %04X\n", _bootloader.device_id);
-	printf("Device............: %s rev. %u\n", _desciptor->name.c_str(), DeviceDescriptor::get_revision(_bootloader.device_id));
 	printf("Bootloader version: %u.%02u\n", _bootloader.version >> 8, _bootloader.version & 0xff);
 	printf("Bootloader address: 0x%06X\n", _bootloader.address);
+
+	_desciptor = DeviceDescriptor::find(_bootloader.device_id);
+	printf("Device............: %s rev. %u\n", _desciptor->name.c_str(), DeviceDescriptor::get_revision(_bootloader.device_id));
 }
 
 // Discover device on network

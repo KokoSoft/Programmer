@@ -18,7 +18,9 @@
 #include <ws2tcpip.h>
 
 
-#define TESTER
+//#define TESTER
+#define NET_CONFIG
+//#define DISCOVER
 
 int main(int argc, char** argv) {
 	try {
@@ -38,26 +40,62 @@ int main(int argc, char** argv) {
 			t.start();
 		} else {
 			NetworkProgrammer prog;
+			do {
+				repeat:
+				try {
 #ifdef NET_CONFIG
 			IN_ADDR ip;
 			//inet_pton(AF_INET, "192.168.56.101", &ip);
-			inet_pton(AF_INET, "10.11.12.13", &ip);
+			inet_pton(AF_INET, "10.11.12.3", &ip);
 			prog.configure_device(ip.s_addr);
-#elif DISCOVER
-			prog.discover_device();
+#elif defined(DISCOVER)
+			/* On Windows, broadcast packets aren't sent out on every interface. They are only sent on the primary interface...
+			 * and I don't recall how Windows determines which that is. 
+			 * https://github.com/ubihazard/broadcast/
+			 */
+			//prog.discover_device();
+			IN_ADDR ip;
+			inet_pton(AF_INET, "10.255.255.255", &ip);
+			prog.connect_device(ip.s_addr);
 #else
 			IN_ADDR ip;
-			//inet_pton(AF_INET, "192.168.56.101", &ip);
-			inet_pton(AF_INET, "10.0.1.250", &ip);
+			//inet_pton(AF_INET, "192.168.128.101", &ip);
+			inet_pton(AF_INET, "10.11.12.13", &ip);
 			prog.connect_device(ip.s_addr);
 #endif
-			prog.read(1024, 1024);
+				}
+				catch (std::exception& err) {
+					//::SetConsoleOutputCP(CP_UTF8);
+					printf("Error: %s\n", err.what());
+					goto repeat;
+				}
+			} while (0);
+			int ooo = 0;
+			do {
+			repeat2:
+				if (ooo++ > 10) return 0;
+				try {
+					prog.read(1024, 128);
+
+				}
+				catch (std::exception& err) {
+					printf("Error2: %s\n", err.what());
+					goto repeat2;
+				}
+			} while (0);
+			prog.read(1024, 128);
+			try {
+				prog.read(1024, 1024);
+			}
+			catch (std::exception& err) {
+				printf("Error3: %s\n", err.what());
+			}
 			prog.erase(1024);
-			prog.read(1024, 1024);
+			prog.read(1024, 102);
 			std::array<std::byte, 64> tmp;
 			tmp.fill((std::byte)0xAA);
 			prog.write(1024+128, tmp);
-			prog.read(1024, 256);
+			prog.read(1024, 25);
 		}
 #endif
 		if (0)
