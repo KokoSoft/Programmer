@@ -158,7 +158,7 @@ bool TargetTester::received(const void* response, int len) {
 	*/
 
 	std::memcpy(&_last_response, &rx_buf->resp, sizeof(_last_response));
-	if (request.command) {
+	if (request.command & COMMAND_CLEAR) {
 		print = true;
 		printf("Statistics cleared.\n");
 		_last_response.boot_counter = 0;
@@ -167,7 +167,7 @@ bool TargetTester::received(const void* response, int len) {
 	}
 
 	check_ESTAT(rx_buf->resp.ESTAT);
-	if (!TX_THROUGHPUT_TEST)
+	if (!ENDLESS_TX)
 		check_RCON(rx_buf->resp.RCON);
 	check_STKPTR(rx_buf->resp.STKPTR);
 
@@ -203,7 +203,7 @@ bool TargetTester::received(const void* response, int len) {
 #endif
 	}
 	_timeout = false;
-	if (!TX_THROUGHPUT_TEST)
+	if (!ENDLESS_TX)
 		_queue.pop();
 	return true;
 }
@@ -224,7 +224,7 @@ void TargetTester::send(bool clear) {
 
 
 	int len = _rand_distr(_rand_eng) % MAX_PAYLOAD;
-	if (TX_THROUGHPUT_TEST)
+	if (ENDLESS_TX || TX_THROUGHPUT_TEST)
 		len = MAX_PAYLOAD;
 
 	if (!CHECKSUM_BYTE_SUPPORT)
@@ -238,7 +238,7 @@ void TargetTester::send(bool clear) {
 
 	if (clear) {
 		_seq |= 0x80000000;
-		frame.command |= 0x01;
+		frame.command |= COMMAND_CLEAR;
 	}
 
 	frame.seq = _seq;
@@ -278,7 +278,6 @@ void TargetTester::test() {
 	using std::chrono::milliseconds;
 	using std::chrono::duration_cast;
 	using std::chrono::duration;
-	constexpr size_t QUEUE_FILL_LEVEL = 5;
 
 	int rx_address_size;
 	std::byte buf[BUFFER_SIZE];
