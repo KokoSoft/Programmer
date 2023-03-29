@@ -54,17 +54,17 @@ namespace Protocol {
 		OP_CHECKSUM,	// Reply: ChecksumReply
 	};
 
-
 	enum Status : uint8_t {
-		STATUS_REQUEST,		// It is a request to a device
+		STATUS_REQUEST,			// It is a request to a device
 		STATUS_OK,
-		STATUS_INPROGRESS,	// Read, Write, Erase, Checksum in progress
-		//STATUS_DONE,		// Read, Write, Erase, Checksum done, attached reply structure / Reply with data
-		STATUS_INV_OP,		// Unknown / unsupported operation
-		STATUS_INV_PARAM,	// Invalid operation parameters
-		STATUS_INV_SRC,		// Sender aren't permitted to perform this operation - discover first
-		STATUS_INV_ADDR,	// Forbidden operation address
-		STATUS_PKT_SIZE,	// Invalid packet size
+		STATUS_INPROGRESS,		// Read, Write, Erase, Checksum in progress
+		STATUS_INV_SRC,			// Sender aren't permitted to perform this operation - discover first
+		STATUS_INV_OP,			// Unknown / unsupported operation
+		STATUS_INV_PARAM,		// Invalid operation parameters
+		STATUS_INV_LENGTH,		// Invalid operation length.
+		STATUS_INV_ADDR,		// Invalid operation address
+		STATUS_PROTECTED_ADDR,	// Forbidden operation address.
+		STATUS_PKT_SIZE			// Invalid packet size
 	};
 
 	PACKED_STRUCT_BEGIN
