@@ -24,9 +24,18 @@ class ETarget : public Exception {
 		const Protocol::Status _status;
 };
 
-class IProgrammer {
+struct ProgrammerDescriptor {
+	size_t max_write;
+	size_t max_read;
+};
+
+class IProgrammerStrategy {
 	public:
-		IProgrammer() : _desciptor(nullptr) {}
+		IProgrammerStrategy(const ProgrammerDescriptor* prog_desc)
+			: _dev_desc(nullptr), _prog_desc(prog_desc)
+		{}
+
+		virtual ~IProgrammerStrategy() {}
 
 		// Read a device's memory
 		virtual std::span<const std::byte> read(uint32_t address, size_t size) = 0;
@@ -41,19 +50,65 @@ class IProgrammer {
 		virtual void reset() = 0;
 
 		// Calculate a checksum of a device's memory
-		virtual uint32_t checksum(uint32_t address, size_t size) = 0;
+		virtual uint32_t checksum(uint32_t address, size_t size);
 
-		const DeviceDescriptor* get_descriptor() { return _desciptor; }
+		// Erase whole device memory
+		virtual void chip_erase();
+
+		// Erase sector and write it
+		virtual void erase_write(uint32_t address, const std::span<const std::byte>& buffer);
+
+		constexpr const DeviceDescriptor* device_descriptor() const { return _dev_desc; }
+
+		constexpr const ProgrammerDescriptor* programmer_descriptor() const { return _prog_desc; }
 
 		// TODO: Move to NetworkProgrammer?
 		enum class Status { Requested, Acked, Done };
 		virtual void on_status(Status status) {}
 
 	protected:
-		const DeviceDescriptor* _desciptor;
+		const DeviceDescriptor* _dev_desc;
+		const ProgrammerDescriptor* const _prog_desc;
 };
 
-class NetworkProgrammer : public IProgrammer {
+
+class Programmer {
+public:
+	Programmer(std::unique_ptr<IProgrammerStrategy>&& programmer_strategy)
+		: _programmer(std::move(programmer_strategy)) {};
+
+	// Read a device's memory
+	std::span<const std::byte> read(uint32_t address, size_t size);
+
+	// Write a device's memory
+	void write(uint32_t address, const std::span<const std::byte>& buffer);
+
+	// Erase a device's memory
+	void erase(uint32_t address);
+
+	// Erase whole device memory
+	void chip_erase();
+
+	// Erase sector and write it
+	void erase_write(uint32_t address, const std::span<const std::byte>& buffer);
+
+	// Reset a device
+	void reset();
+
+	// Calculate a checksum of a device's memory
+	uint32_t checksum(uint32_t address, size_t size);
+
+protected:
+	const DeviceDescriptor* device_descriptor() const {
+		return _programmer->device_descriptor();
+	}
+	const ProgrammerDescriptor* programmer_descriptor() const {
+		return _programmer->programmer_descriptor();
+	}
+	std::unique_ptr<IProgrammerStrategy> _programmer;
+};
+
+class NetworkProgrammer : public IProgrammerStrategy {
 	public:
 		NetworkProgrammer();
 
@@ -116,6 +171,8 @@ class NetworkProgrammer : public IProgrammer {
 		struct sockaddr_in _tx_address;
 		struct sockaddr_in _rx_address;
 		BootloaderInfo _bootloader;
+
+		static const ProgrammerDescriptor _prog_desc;
 
 		class TransmitBuffer {
 			public:

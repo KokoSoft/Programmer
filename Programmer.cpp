@@ -11,6 +11,143 @@
 #include "Programmer.hpp"
 #include "DeviceDescriptor.hpp"
 
+/* Programmer */
+
+// Read a device's memory
+std::span<const std::byte> Programmer::read(uint32_t address, size_t size) {
+	try {
+		// TODO: Check address space
+		
+		// TODO: Only even size support
+
+		if (size > programmer_descriptor()->max_read)
+			throw Exception("Read size exceeds limit.");
+
+		return _programmer->read(address, size);
+	}
+	catch (Exception& err) {
+		err.prepend("Unable to read {} bytes from address {:#06X}.", size, address);
+		throw;
+	}
+}
+
+// Write a device's memory
+void Programmer::write(uint32_t address, const std::span<const std::byte>& buffer) {
+	try {
+		if (address % device_descriptor()->WRITE_SIZE)
+			throw Exception("Address isn't aligned to the sector size.");
+
+		if (buffer.size_bytes() % device_descriptor()->WRITE_SIZE)
+			throw Exception("Size isn't aligned to the sector size.");
+
+		// TODO: Check address correctness?
+
+		// TODO: Support multiple write?
+		if (buffer.size_bytes() > programmer_descriptor()->max_write)
+			throw Exception("Size is beyond the capabilities of the programmer.");
+
+		_programmer->write(address, buffer);
+	}
+	catch (Exception& err) {
+		err.prepend("Write {} bytes at address {:#06X} failed.", buffer.size_bytes(), address);
+		throw;
+	}
+}
+
+// Erase a device's memory
+void Programmer::erase(uint32_t address) {
+	try {
+		if (address % device_descriptor()->ERASE_SIZE)
+			throw Exception("Address isn't aligned to erase block.");
+
+		// TODO: Support for memory regions
+
+		_programmer->erase(address);
+	}
+	catch (Exception& err) {
+		err.prepend("Erase device memory at address {:#06X} failed.", address);
+		throw;
+	}
+}
+
+// Erase whole device memory
+void Programmer::chip_erase() {
+	try {
+		_programmer->chip_erase();
+	}
+	catch (Exception& err) {
+		err.prepend("Chip erase failed.");
+		throw;
+	}
+}
+
+// Erase sector and write it
+void Programmer::erase_write(uint32_t address, const std::span<const std::byte>& buffer) {
+	try {
+		if (address % device_descriptor()->ERASE_SIZE)
+			throw Exception("Address isn't aligned to erase size.");
+
+		if (buffer.size_bytes() % device_descriptor()->WRITE_SIZE)
+			throw Exception("Size isn't aligned to the sector size.");
+
+		// TODO: Check address correctness?
+
+		// TODO: Support multiple write?
+		if ((buffer.size_bytes() > programmer_descriptor()->max_write)||
+			(buffer.size_bytes() > device_descriptor()->ERASE_SIZE))
+			throw Exception("Size is beyond the capabilities of the programmer.");
+
+		_programmer->write(address, buffer);
+	}
+	catch (Exception& err) {
+		err.prepend("Erase and write {} bytes at address {:#06X} failed.", buffer.size_bytes(), address);
+		throw;
+	}
+}
+
+// Reset a device
+void Programmer::reset() {
+	try {
+		_programmer->reset();
+	}
+	catch (Exception& err) {
+		err.prepend("Unable to reset device.");
+		throw;
+	}
+}
+
+// Calculate a checksum of a device's memory
+uint32_t Programmer::checksum(uint32_t address, size_t size) {
+	try {
+		return _programmer->checksum(address, size);
+	}
+	catch (Exception& err) {
+		err.prepend("Unable to checksum memory region {:#X} - {:#X}.", address, address + size - 1);
+		throw;
+	}
+}
+
+
+/* IProgrammerStrategy */
+
+// Calculate a checksum of a device's memory
+uint32_t IProgrammerStrategy::checksum(uint32_t address, size_t size) {
+	throw Exception("Operation is not supported.");
+}
+
+// Erase whole device memory
+void IProgrammerStrategy::chip_erase() {
+	throw Exception("Operation is not supported.");
+}
+
+// Erase sector and write it
+void IProgrammerStrategy::erase_write(uint32_t address, const std::span<const std::byte>& buffer) {
+	throw Exception("Operation is not supported.");
+}
+
+
+/* ETarget */
+
 ETarget::ETarget(const Protocol::Status status)
 	: Exception(), _status(status)
 {
@@ -43,9 +180,21 @@ ETarget::ETarget(const Protocol::Status status)
 }
 
 
+/* NetworkProgrammer */
+
+const ProgrammerDescriptor NetworkProgrammer::_prog_desc = {
+	// max_write
+	NetworkProgrammer::ReceiveBuffer::MAX_PAYLOAD,
+	// TODO: NetworkProgrammer::TransmitBuffer::,
+	// max_read
+	NetworkProgrammer::ReceiveBuffer::MAX_PAYLOAD
+};
+
+
 NetworkProgrammer::NetworkProgrammer()
 	: _poll{ { _socket, POLLIN} },
-	_tx_address{ AF_INET, Network::htons()(Protocol::PORT) }
+	_tx_address{ AF_INET, Network::htons()(Protocol::PORT) },
+	IProgrammerStrategy(&_prog_desc)
 { 
 	_socket.set_dont_fragment(true);
 	_socket.receive_broadcast(false);
@@ -60,7 +209,7 @@ void NetworkProgrammer::set_address(uint32_t address, uint16_t port) {
 }
 
 void NetworkProgrammer::check_connection() {
-	if (!_desciptor)
+	if (!_dev_desc)
 		throw Exception("Not connected to a target.");
 }
 
@@ -179,8 +328,8 @@ void NetworkProgrammer::process_discover(Protocol::Operation op) {
 	printf("Bootloader version: %u.%02u\n", _bootloader.version >> 8, _bootloader.version & 0xff);
 	printf("Bootloader address: 0x%06X\n", _bootloader.address);
 
-	_desciptor = DeviceDescriptor::find(_bootloader.device_id);
-	printf("Device............: %s rev. %u\n", _desciptor->name.c_str(), DeviceDescriptor::get_revision(_bootloader.device_id));
+	_dev_desc = DeviceDescriptor::find(_bootloader.device_id);
+	printf("Device............: %s rev. %u\n", _dev_desc->name.c_str(), DeviceDescriptor::get_revision(_bootloader.device_id));
 }
 
 // Discover device on network
@@ -236,20 +385,11 @@ void NetworkProgrammer::connect_device(uint32_t ip_address, uint16_t port) {
 
 // Read a device's memory
 std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size) {
-	if (size > _rx_buf.MAX_PAYLOAD)
-		throw Exception("Read size above limit.");
-
 	check_connection();
 
 	_tx_buf.select_operation(Protocol::OP_READ, address, static_cast<uint16_t>(size));
 
-	try {
-		communicate();
-	}
-	catch (Exception& err) {
-		err.prepend("Unable to read {} bytes from address {:#06X}.", size, address);
-		throw;
-	}
+	communicate();
 	return _rx_buf.get_payload(Protocol::OP_READ);
 }
 
@@ -257,21 +397,12 @@ std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size
 void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>& buffer) {
 	check_connection();
 	
-	if ((address % _desciptor->WRITE_SIZE) || (buffer.size_bytes() != _desciptor->WRITE_SIZE))
-		throw Exception("Write not aligned to sector size!");
-
-	//_tx_buf.select_operation(Protocol::OP_WRITE, address, buffer.size_bytes());
+		//_tx_buf.select_operation(Protocol::OP_WRITE, address, buffer.size_bytes());
 	auto write = _tx_buf.prepare_payload<Protocol::Write>();
 	write->address = address;
 	std::memcpy(write->data, buffer.data(), sizeof(write->data));
 
-	try {
-		communicate();
-	}
-	catch (Exception& err) {
-		err.prepend("Write {} bytes at address {:#06X} failed.", buffer.size_bytes(), address);
-		throw;
-	}
+	communicate();
 }
 
 // Erase a device's memory
@@ -279,26 +410,14 @@ void NetworkProgrammer::erase(uint32_t address) {
 	check_connection();
 
 	_tx_buf.select_operation(Protocol::OP_ERASE, address);
-	try {
-		communicate();
-	}
-	catch (Exception& err) {
-		err.prepend("Erase device memory at address {:#06X} failed.", address);
-		throw;
-	}
+	communicate();
 }
 
 // Reset a device
 void NetworkProgrammer::reset() {
 	check_connection();
 	_tx_buf.select_operation(Protocol::OP_RESET);
-	try {
-		communicate();
-	}
-	catch (Exception& err) {
-		err.prepend("Reset device failed.");
-		throw;
-	}
+	communicate();
 }
 
 // Calculate a checksum of a device's memory
