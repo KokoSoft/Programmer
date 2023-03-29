@@ -11,6 +11,38 @@
 #include "Programmer.hpp"
 #include "DeviceDescriptor.hpp"
 
+ETarget::ETarget(const Protocol::Status status)
+	: Exception(), _status(status)
+{
+	switch (status) {
+		case Protocol::STATUS_INV_OP:
+			_message = "Operation not supported by the target.";
+
+		case Protocol::STATUS_INV_PARAM:
+			_message = "The target detected an invalid parameter.";
+
+		case Protocol::STATUS_INV_LENGTH:
+			_message = "Invalid operation length.";
+
+		case Protocol::STATUS_INV_ADDR:
+			_message = "Invalid operation address.";
+
+		case Protocol::STATUS_PROTECTED_ADDR:
+			_message = "Forbidden operation address.";
+
+		case Protocol::STATUS_INV_SRC:
+			_message = "Sender aren't permitted to perform this operation.";
+
+		case Protocol::STATUS_PKT_SIZE:
+			_message = "The target reported invalid packet size.";
+
+		case Protocol::STATUS_REQUEST:
+		default:
+			_message = "Target reported an invalid status.";
+	}
+}
+
+
 NetworkProgrammer::NetworkProgrammer()
 	: _poll{ { _socket, POLLIN} },
 	_tx_address{ AF_INET, Network::htons()(Protocol::PORT) }
@@ -62,7 +94,7 @@ void NetworkProgrammer::communicate() {
 		}
 	}
 
-	throw Exception("The target did not respond within the specified time");
+	throw Exception("The target did not respond within the specified time.");
 }
 
 // Process received frame
@@ -115,18 +147,8 @@ NetworkProgrammer::Result NetworkProgrammer::process() {
 
 			return Result::ExtendTime;
 
-		case Protocol::STATUS_INV_OP:
-			throw Exception("Operation not supported by the target.");
-
-		case Protocol::STATUS_INV_PARAM:
-			throw Exception("The target detected an invalid parameter.");
-
-		case Protocol::STATUS_INV_SRC:
-			throw Exception("The target did not allow this operation.");
-
-		case Protocol::STATUS_REQUEST:
 		default:
-			throw Exception("Target reported an invalid status.");
+			throw ETarget(_rx_buf.get_status());
 	}
 }
 
@@ -187,7 +209,14 @@ void NetworkProgrammer::configure_device(uint32_t ip_address, uint16_t port) {
 	conf->mac_address_eth[4] = mac[0];
 	conf->mac_address_eth[5] = mac[1];
 #endif
-	process_discover(Protocol::OP_NET_CONFIG);
+
+	try {
+		process_discover(Protocol::OP_NET_CONFIG);
+	}
+	catch (Exception& err) {
+		err.prepend("Unable to configure network connection.");
+		throw;
+	}
 }
 
 // Select device
@@ -196,7 +225,13 @@ void NetworkProgrammer::connect_device(uint32_t ip_address, uint16_t port) {
 
 	_tx_buf.select_operation(Protocol::OP_DISCOVER);
 
-	process_discover();
+	try {
+		process_discover();
+	}
+	catch (Exception& err) {
+		err.prepend("Unable to connect to a target.");
+		throw;
+	}
 }
 
 // Read a device's memory
@@ -208,7 +243,13 @@ std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size
 
 	_tx_buf.select_operation(Protocol::OP_READ, address, static_cast<uint16_t>(size));
 
-	communicate();
+	try {
+		communicate();
+	}
+	catch (Exception& err) {
+		err.prepend("Unable to read {} bytes from address {:#06X}.", size, address);
+		throw;
+	}
 	return _rx_buf.get_payload(Protocol::OP_READ);
 }
 
@@ -217,14 +258,20 @@ void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>
 	check_connection();
 	
 	if ((address % _desciptor->WRITE_SIZE) || (buffer.size_bytes() != _desciptor->WRITE_SIZE))
-		throw Exception("Write not alligned to sector size!");
+		throw Exception("Write not aligned to sector size!");
 
 	//_tx_buf.select_operation(Protocol::OP_WRITE, address, buffer.size_bytes());
 	auto write = _tx_buf.prepare_payload<Protocol::Write>();
 	write->address = address;
 	std::memcpy(write->data, buffer.data(), sizeof(write->data));
 
-	communicate();
+	try {
+		communicate();
+	}
+	catch (Exception& err) {
+		err.prepend("Write {} bytes at address {:#06X} failed.", buffer.size_bytes(), address);
+		throw;
+	}
 }
 
 // Erase a device's memory
@@ -232,14 +279,26 @@ void NetworkProgrammer::erase(uint32_t address) {
 	check_connection();
 
 	_tx_buf.select_operation(Protocol::OP_ERASE, address);
-	communicate();
+	try {
+		communicate();
+	}
+	catch (Exception& err) {
+		err.prepend("Erase device memory at address {:#06X} failed.", address);
+		throw;
+	}
 }
 
 // Reset a device
 void NetworkProgrammer::reset() {
 	check_connection();
 	_tx_buf.select_operation(Protocol::OP_RESET);
-	communicate();
+	try {
+		communicate();
+	}
+	catch (Exception& err) {
+		err.prepend("Reset device failed.");
+		throw;
+	}
 }
 
 // Calculate a checksum of a device's memory

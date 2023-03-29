@@ -18,6 +18,12 @@
 #include "Protocol.hpp"
 #include "DeviceDescriptor.hpp"
 
+class ETarget : public Exception {
+	public:
+		ETarget(const Protocol::Status status);
+		const Protocol::Status _status;
+};
+
 class IProgrammer {
 	public:
 		IProgrammer() : _desciptor(nullptr) {}
@@ -172,7 +178,9 @@ class NetworkProgrammer : public IProgrammer {
 
 			uint8_t get_operation() const { return get_header()->operation; }
 			uint8_t get_sequence() const { return get_header()->seq; }
-			uint8_t get_status() const { return get_header()->status; }
+			Protocol::Status get_status() const { 
+				return static_cast<Protocol::Status>(get_header()->status);
+			}
 			uint8_t get_version() const { return get_header()->version; }
 
 			// Get span of the buffer
