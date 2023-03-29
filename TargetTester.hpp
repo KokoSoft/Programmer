@@ -35,9 +35,9 @@ class Timer {
 		HANDLE _handle;
 };
 
-class TargetTester {
+class TargetNetworkTester {
 	public:
-		TargetTester(uint32_t address);
+		TargetNetworkTester(uint32_t address);
 
 		void test();
 		static void print_size(uint64_t value);

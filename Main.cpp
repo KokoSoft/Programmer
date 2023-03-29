@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 #ifdef TESTER
 		IN_ADDR ip;
 		inet_pton(AF_INET, "10.11.12.13", &ip);
-		TargetTester test(ip.s_addr);
+		TargetNetworkTester test(ip.s_addr);
 		test.test();
 
 #else

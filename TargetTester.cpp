@@ -43,7 +43,7 @@ bool Timer::check() {
 }
 
 
-TargetTester::TargetTester(uint32_t address)
+TargetNetworkTester::TargetNetworkTester(uint32_t address)
 	: _poll{ { _socket, POLLIN} }, _timeout(false), _stats{0}, _stats_timer(1000*10)
 {
 	std::random_device dev;
@@ -60,7 +60,7 @@ TargetTester::TargetTester(uint32_t address)
 	_seq = 0;
 }
 
-void TargetTester::check_ESTAT(uint8_t ESTAT) {
+void TargetNetworkTester::check_ESTAT(uint8_t ESTAT) {
 	if (ESTAT & ESTAT_TXABRT_MASK) printf("ESTAT: Transmit Abort Error\n");
 	if (ESTAT & ESTAT_BUFER_MASK) printf("ESTAT: Ethernet Buffer Error\n");
 	//if (ESTAT & ESTAT_RXBUSY_MASK) printf("ESTAT: Receive Busy\n");
@@ -68,7 +68,7 @@ void TargetTester::check_ESTAT(uint8_t ESTAT) {
 	if (!(ESTAT & ESTAT_PHYRDY_MASK)) printf("ESTAT: Ethernet PHY Clock NOT Ready\n");
 }
 
-void TargetTester::check_RCON(uint8_t RCON) {
+void TargetNetworkTester::check_RCON(uint8_t RCON) {
 	if (!(RCON & RCON_nBOR_MASK)) printf("RCON: Brown-out Reset\n");
 	if (!(RCON & RCON_nPOR_MASK)) printf("RCON: Power-on Reset\n");
 	if (!(RCON & RCON_nPD_MASK)) printf("RCON: Power-Down Detection\n");
@@ -77,12 +77,12 @@ void TargetTester::check_RCON(uint8_t RCON) {
 	if (!(RCON & RCON_nCM_MASK)) printf("RCON: Configuration Mismatch\n");
 }
 
-void TargetTester::check_STKPTR(uint8_t STKPTR) {
+void TargetNetworkTester::check_STKPTR(uint8_t STKPTR) {
 	if (STKPTR & STKPTR_STKUNF_MASK) printf("STKPTR: Stack Underflow\n");
 	if (STKPTR & STKPTR_STKFUL_MASK) printf("STKPTR: Stack Full\n");
 }
 
-bool TargetTester::received(const void* response, int len) {
+bool TargetNetworkTester::received(const void* response, int len) {
 	const struct {
 		Response resp;
 		uint8_t payload[MAX_PAYLOAD];
@@ -208,7 +208,7 @@ bool TargetTester::received(const void* response, int len) {
 	return true;
 }
 
-void TargetTester::timeout() {
+void TargetNetworkTester::timeout() {
 	_timeout = true;
 	_stats.timeout++;
 	const Frame& request = _queue.front();
@@ -216,7 +216,7 @@ void TargetTester::timeout() {
 	send();
 }
 
-void TargetTester::send(bool clear) {
+void TargetNetworkTester::send(bool clear) {
 	struct {
 		Request reg;
 		uint8_t payload[MAX_PAYLOAD];
@@ -253,7 +253,7 @@ void TargetTester::send(bool clear) {
 	_stats.tx_total_bytes += len + sizeof(Request) + NET_HEADERS_SIZE;
 }
 
-void TargetTester::prepare_payload(uint8_t* tx_buf, Frame& frame) {
+void TargetNetworkTester::prepare_payload(uint8_t* tx_buf, Frame& frame) {
 	uint8_t* check_buf = frame.payload;
 	uint8_t mask = 0x5A;
 	int size = frame.payload_size;
@@ -273,7 +273,7 @@ void TargetTester::prepare_payload(uint8_t* tx_buf, Frame& frame) {
 	}
 }
 
-void TargetTester::test() {
+void TargetNetworkTester::test() {
 	using std::chrono::steady_clock;
 	using std::chrono::milliseconds;
 	using std::chrono::duration_cast;
@@ -319,7 +319,7 @@ void TargetTester::test() {
 	}
 }
 
-void TargetTester::print_size(uint64_t value) {
+void TargetNetworkTester::print_size(uint64_t value) {
 	double val = value;
 
 	if (val >= 1000 * 1000 * 1000) {
