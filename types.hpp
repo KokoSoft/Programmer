@@ -11,14 +11,13 @@
 #include <stdio.h>
 
 #include <string>
-#include <exception>
 #include <stdexcept>
 #include <cassert>
 
+#include "Exceptions.hpp"
+
 #define _T(x) L ## x
 typedef std::wstring String;
-#define Exception(x) std::runtime_error(x)
-
 
 #ifdef _MSC_VER
 #define PACKED_STRUCT_BEGIN	__pragma(pack(push, 1))

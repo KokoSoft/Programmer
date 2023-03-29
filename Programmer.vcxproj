@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Elf.cpp" />
+    <ClCompile Include="Exceptions.cpp" />
     <ClCompile Include="Hex.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="Network.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="DeviceDescriptor.hpp" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="Elf.hpp" />
+    <ClInclude Include="Exceptions.hpp" />
     <ClInclude Include="Hex.hpp" />
     <ClInclude Include="Image.hpp" />
     <ClInclude Include="Network.hpp" />
