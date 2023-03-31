@@ -5,14 +5,14 @@
 // Author: Adrian Warecki <embedded@kokosoftware.pl>
 
 #include <iostream>
-#include "Elf.hpp"
-#include "Hex.hpp"
-#include "Image.hpp"
-#include "Network.hpp"
-#include "Programmer.hpp"
-#include "DeviceDescriptor.hpp"
-#include "Target.hpp"
-#include "TargetTester.hpp"
+#include <Programmer/Elf.hpp>
+#include <Programmer/Hex.hpp>
+#include <Programmer/Image.hpp>
+#include <Programmer/Network.hpp>
+#include <Programmer/Programmer.hpp>
+#include <Programmer/DeviceDescriptor.hpp>
+#include <Programmer/Target.hpp>
+#include <Programmer/TargetTester.hpp>
 
 // TODO: Move this heaer to Network
 #include <ws2tcpip.h>

@@ -15,72 +15,72 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="src\Elf.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Elf.cpp">
+    <ClCompile Include="src\Exceptions.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Hex.cpp">
+    <ClCompile Include="src\Hex.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Image.cpp">
+    <ClCompile Include="src\Image.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Network.cpp">
+    <ClCompile Include="src\Network.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Programmer.cpp">
+    <ClCompile Include="src\Main.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Target.cpp">
+    <ClCompile Include="src\Programmer.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="DeviceDescriptor.cpp">
+    <ClCompile Include="src\Target.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="TargetTester.cpp">
+    <ClCompile Include="src\DeviceDescriptor.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Exceptions.cpp">
+    <ClCompile Include="src\TargetTester.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="protocol.hpp">
+    <ClInclude Include="include\Programmer\DeviceDescriptor.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="elf.h">
+    <ClInclude Include="include\Programmer\elf.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Elf.hpp">
+    <ClInclude Include="include\Programmer\Elf.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="types.hpp">
+    <ClInclude Include="include\Programmer\Exceptions.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Hex.hpp">
+    <ClInclude Include="include\Programmer\Hex.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Image.hpp">
+    <ClInclude Include="include\Programmer\Image.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="DeviceDescriptor.hpp">
+    <ClInclude Include="include\Programmer\Network.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Network.hpp">
+    <ClInclude Include="include\Programmer\Programmer.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Programmer.hpp">
+    <ClInclude Include="include\Programmer\protocol.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Target.hpp">
+    <ClInclude Include="include\Programmer\Target.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="TargetTester.hpp">
+    <ClInclude Include="include\Programmer\TargetTester.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Exceptions.hpp">
+    <ClInclude Include="include\Programmer\types.hpp">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
   </ItemGroup>

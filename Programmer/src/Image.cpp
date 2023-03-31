@@ -7,8 +7,8 @@
 #include <iostream>
 #include <array>
 
-#include "types.hpp"
-#include "Image.hpp"
+#include <Programmer/types.hpp>
+#include <Programmer/Image.hpp>
 
 
 void Image::process(size_t address, const std::span<const std::byte>& data) {

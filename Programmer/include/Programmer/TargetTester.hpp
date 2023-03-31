@@ -26,9 +26,9 @@ constexpr size_t QUEUE_FILL_LEVEL = 5;
 #include <memory>
 #include <functional>
 
-#include "Network.hpp"
-#include "Programmer.hpp"
-#include "Protocol.hpp"
+#include <Programmer/Network.hpp>
+#include <Programmer/Programmer.hpp>
+#include <Programmer/protocol.hpp>
 
 class Timer {
 	public:

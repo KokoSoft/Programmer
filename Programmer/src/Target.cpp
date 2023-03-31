@@ -8,8 +8,8 @@
 #include <ws2tcpip.h>
 //#include <arpa/inet.h>
 
-#include "Target.hpp"
-#include "protocol.hpp"
+#include <Programmer/Target.hpp>
+#include <Programmer/protocol.hpp>
 
 Target::Target(uint16_t dev_id, size_t flash_size)
 	: _dev_id(dev_id)

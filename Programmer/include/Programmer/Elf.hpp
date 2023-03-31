@@ -12,9 +12,9 @@
 #include <filesystem>
 #include <vector>
 
-#include "Image.hpp"
+#include <Programmer/Image.hpp>
 
-#include "elf.h"
+#include <Programmer/elf.h>
 
 class Elf;
 

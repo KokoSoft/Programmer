@@ -4,8 +4,8 @@
 //
 // Author: Adrian Warecki <embedded@kokosoftware.pl>
 
-#include "types.hpp"
-#include "Elf.hpp"
+#include <Programmer/types.hpp>
+#include <Programmer/Elf.hpp>
 
 
 void sh_type(int type) {

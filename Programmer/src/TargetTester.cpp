@@ -9,7 +9,7 @@
 #include <cinttypes>
 #include <exception>
 
-#include "TargetTester.hpp"
+#include <Programmer/TargetTester.hpp>
 
 #include <stdio.h>
 
