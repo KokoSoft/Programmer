@@ -8,7 +8,7 @@
 #ifndef __TARGETTESTER_HPP__
 #define __TARGETTESTER_HPP__
 
-/* Tester configuration */
+/* Network stack tester configuration */
 constexpr bool ENDLESS_TX = false; /* Target sends a response frame indefinitely. Transmitter throughput test */
 constexpr bool TX_THROUGHPUT_TEST = false; /* Use all buffer space to maximalize troughput */
 constexpr bool CHECKSUM_BYTE_SUPPORT = true; /* Targets checksum calculation function handles odd-length packets */
@@ -23,8 +23,12 @@ constexpr size_t QUEUE_FILL_LEVEL = 5;
 #include <array>
 #include <chrono>
 #include <queue>
+#include <memory>
+#include <functional>
 
 #include "Network.hpp"
+#include "Programmer.hpp"
+#include "Protocol.hpp"
 
 class Timer {
 	public:
@@ -35,6 +39,7 @@ class Timer {
 		HANDLE _handle;
 };
 
+/* Class to test network stack - packet receiving and transmitting */
 class TargetNetworkTester {
 	public:
 		TargetNetworkTester(uint32_t address);
@@ -156,6 +161,20 @@ class TargetNetworkTester {
 			// Reserved : Write as ‘0’
 			ESTAT_RESERVED_MASK	= 0x00B8,
 		};
+};
+
+/* Class to test bootloader protocol handling */
+class TargetProtoTester {
+	public:
+		TargetProtoTester(std::unique_ptr<IProgrammerStrategy> programmer)
+			: _programmer(std::move(programmer)) {}
+
+		void run_tests();
+
+	protected:
+		void run_test(std::function<void(void)> fun, Protocol::Status expected_result = Protocol::Status::STATUS_OK);
+
+		std::unique_ptr<IProgrammerStrategy> _programmer;
 };
 
 #endif /* __TARGETTESTER_HPP__ */

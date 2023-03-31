@@ -18,7 +18,8 @@
 #include <ws2tcpip.h>
 
 
-//#define TESTER
+//#define NET_TESTER
+#define BOOT_TESTER
 #define NET_CONFIG
 //#define DISCOVER
 
@@ -28,12 +29,20 @@ int main(int argc, char** argv) {
 
 		std::cout << "Hello World! " << argc << "\n";
 
-#ifdef TESTER
+#ifdef NET_TESTER
 		IN_ADDR ip;
 		inet_pton(AF_INET, "10.11.12.13", &ip);
 		TargetNetworkTester test(ip.s_addr);
 		test.test();
+#elif defined(BOOT_TESTER)
+		auto prog = std::make_unique<NetworkProgrammer>();
+		IN_ADDR ip;
+		//inet_pton(AF_INET, "192.168.56.101", &ip);
+		inet_pton(AF_INET, "10.11.12.3", &ip);
+		prog->configure_device(ip.s_addr);
 
+		TargetProtoTester test(std::move(prog));
+		test.run_tests();
 #else
 		if (!!(argc > 1)) {
 			Target t(DeviceDescriptor::PIC18F97J60 << 5, 128);

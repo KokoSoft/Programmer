@@ -42,7 +42,6 @@ bool Timer::check() {
 	}
 }
 
-
 TargetNetworkTester::TargetNetworkTester(uint32_t address)
 	: _poll{ { _socket, POLLIN} }, _timeout(false), _stats{0}, _stats_timer(1000*10)
 {
@@ -331,3 +330,127 @@ void TargetNetworkTester::print_size(uint64_t value) {
 	} else
 		printf("%" PRIu64 " ", value);
 }
+
+
+/* TargetProtoTester */
+
+void TargetProtoTester::run_tests() {
+	auto prog = _programmer.get();
+	uint32_t boot_base = static_cast<NetworkProgrammer*>(prog)->get_bootloader_info().address;
+	boot_base &= ~(2048 - 1);
+	printf("boot base = 0x%08X\n", boot_base);
+	// Invalid protocol version
+	// Invalid operation code
+	// Illegal broadcast
+	// Invalid status in request
+	// Duplicated seq
+
+	// Request address outside devices address space
+	printf("Address UH\n");
+	run_test([prog] { prog->read(0x01000000, 4); }, Protocol::STATUS_INV_ADDR);
+	printf("Address 22 bit\n");
+	run_test([prog] { prog->read(0x00400000, 4); }, Protocol::STATUS_INV_ADDR);
+
+	// Size too big
+	printf("Size too big\n");
+	run_test([prog] { prog->read(1024, 1024); }, Protocol::STATUS_INV_LENGTH );
+
+	// Odd size
+	printf("Odd size\n");
+	run_test([prog] { prog->read(1024, 63); }, Protocol::STATUS_INV_LENGTH);
+
+	// Valid request
+	printf("Valid read\n");
+	run_test([prog] { prog->read(1024, 64); });
+
+	printf("Unaligned erase L\n");
+	run_test([prog] { prog->erase(1); }, Protocol::STATUS_INV_ADDR);
+
+	printf("Unaligned erase H\n");
+	run_test([prog] { prog->erase(512); }, Protocol::STATUS_INV_ADDR);
+
+	printf("Invalid address erase U\n");
+	run_test([prog] { prog->erase(0x200000); }, Protocol::STATUS_INV_ADDR);
+
+	printf("Erase boot 1st\n");
+	run_test([prog, boot_base] { prog->erase(boot_base); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Erase boot 2st\n");
+	run_test([prog, boot_base] { prog->erase(boot_base + 1024); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Erase ok\n");
+	run_test([prog] { prog->erase(1024); });
+	run_test([prog, boot_base] { prog->erase(boot_base + 2048); });
+
+	std::array<std::byte, 63> tmp63;
+	tmp63.fill((std::byte)0x55);
+
+	std::array<std::byte, 64> tmp64;
+	tmp64.fill((std::byte)0xAA);
+
+	std::array<std::byte, 128> tmp128;
+	tmp128.fill((std::byte)0xAA);
+
+	std::array<std::byte, 1024> tmp1024;
+	tmp1024.fill((std::byte)0xDE);
+
+	printf("Write unaligned address\n");
+	run_test([prog, tmp64] { prog->write(63, tmp64); }, Protocol::STATUS_INV_ADDR);
+
+	printf("Write unaligned length\n");
+	run_test([prog, tmp63] { prog->write(64, tmp63); }, Protocol::STATUS_INV_LENGTH);
+
+	printf("Write boot, overlap beginning\n");
+	run_test([prog, tmp128, boot_base] { prog->write(boot_base - 64, tmp128); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Write boot, overlap end\n");
+	run_test([prog, tmp128, boot_base] { prog->write(boot_base + 2048 - 64, tmp128); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Write boot beginning\n");
+	run_test([prog, tmp64, boot_base] { prog->write(boot_base, tmp64); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Write boot end\n");
+	run_test([prog, tmp64, boot_base] { prog->write(boot_base + 2048 - 64, tmp64); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Write boot middle\n");
+	run_test([prog, tmp64, boot_base] { prog->write(boot_base + 1024 + 64, tmp64); }, Protocol::STATUS_PROTECTED_ADDR);
+
+	printf("Write ok\n");
+	run_test([prog, tmp64, boot_base] { prog->write(boot_base - 64, tmp64); });
+
+	printf("Write ok2\n");
+	run_test([prog, tmp64] { prog->write(64, tmp64); });
+
+	// TODO: Truncated frame
+
+	std::span<const std::byte> rcv;
+	printf("Read\n");
+	run_test([prog, &rcv] { rcv = prog->read(1024 + 128, 64); });
+	if (std::memcmp(tmp64.data(), rcv.data(), rcv.size_bytes()))
+		throw Exception("Received invalid data.");
+#if 0
+	prog.read(1024, 128);
+	prog.read(1024, 128);
+	prog.read(1024, 1024);
+	prog.read(1024, 102);
+	prog.read(1024, 25);
+#endif
+}
+
+void TargetProtoTester::run_test(std::function<void(void)> fun,
+								 Protocol::Status expected_result) {
+	Protocol::Status status = Protocol::Status::STATUS_OK;
+
+	try {
+		fun();
+	}
+	catch (ETarget& err) {
+		status = err.status;
+	}
+
+	if (status != expected_result)
+		// TODO: Create custom formatter
+		throw Exception("Invalid result {}. Expected {}.", static_cast<uint8_t>(status), static_cast<uint8_t>(expected_result));
+}
+
+
