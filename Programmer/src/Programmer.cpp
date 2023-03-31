@@ -11,6 +11,8 @@
 #include <Programmer/Programmer.hpp>
 #include <Programmer/DeviceDescriptor.hpp>
 
+namespace programmer {
+
 /* Programmer */
 
 // Read a device's memory
@@ -475,3 +477,5 @@ void NetworkProgrammer::ReceiveBuffer::set_content_length(size_t size) {
 	assert(size <= _buffer.size());
 	_size = size;
 }
+
+} // namespace programmer

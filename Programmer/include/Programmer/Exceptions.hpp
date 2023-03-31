@@ -13,6 +13,8 @@
 //#include <stdexcept>
 #include <format>
 
+namespace programmer {
+
 class Exception : public std::runtime_error {
 	public:
 		Exception() : std::runtime_error(nullptr) {};
@@ -50,6 +52,6 @@ class Exception : public std::runtime_error {
 		std::string _message;
 };
 
-
+} // namespace programmer
 
 #endif /* __EXCEPTIONS_HPP__ */

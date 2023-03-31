@@ -11,6 +11,8 @@
 #include <Programmer/Target.hpp>
 #include <Programmer/protocol.hpp>
 
+namespace programmer {
+
 Target::Target(uint16_t dev_id, size_t flash_size)
 	: _dev_id(dev_id)
 {
@@ -214,3 +216,5 @@ void Target::start() {
 		printf("\n");
 	}
 }
+
+} // namespace programmer

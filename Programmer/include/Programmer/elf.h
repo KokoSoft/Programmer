@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+namespace programmer {
+
 /*
  * ELF definitions that are independent of architecture or word size.
  */
@@ -931,5 +933,7 @@ typedef struct {
 #define	ELF32SHDRSIZE	sizeof(Elf32_Shdr)
 #define	ELF32SYMSIZE	sizeof(Elf32_Sym)
 #define	ELF32RELSIZE	8
+
+} // namespace programmer
 
 #endif /* __ELF_H__ */

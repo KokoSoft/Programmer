@@ -12,6 +12,8 @@
 #include <Programmer/Hex.hpp>
 #include <Programmer/Image.hpp>
 
+namespace programmer {
+
 enum {
 	RT_DATA,				// Data
 	RT_EOF,					// End Of File
@@ -144,3 +146,5 @@ void Hex::read(const std::filesystem::path& path, ImageInterface& image) {
 	Hex parser(path, image);
 	parser.read_file();
 }
+
+} // namespace programmer

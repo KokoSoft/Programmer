@@ -12,6 +12,8 @@
 
 #include <Programmer/Network.hpp>
 
+namespace programmer {
+
 void Network::startup() {
 	WSADATA wsa_data;
 	std::memset(&wsa_data, 0, sizeof(wsa_data));
@@ -26,3 +28,5 @@ void Network::startup() {
 void Network::cleanup() {
 	WSACleanup();
 }
+
+} // namespace programmer

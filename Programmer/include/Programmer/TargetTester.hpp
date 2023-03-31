@@ -8,16 +8,6 @@
 #ifndef __TARGETTESTER_HPP__
 #define __TARGETTESTER_HPP__
 
-/* Network stack tester configuration */
-constexpr bool ENDLESS_TX = false; /* Target sends a response frame indefinitely. Transmitter throughput test */
-constexpr bool TX_THROUGHPUT_TEST = false; /* Use all buffer space to maximalize troughput */
-constexpr bool CHECKSUM_BYTE_SUPPORT = true; /* Targets checksum calculation function handles odd-length packets */
-// 1512
-constexpr int TARGET_BUFFER_SIZE = 512;	/* Targets transmit buffer size. Frames above 512 bytes require extended ethernet checksum function! */
-static constexpr long long TIMEOUT = 500;
-constexpr size_t QUEUE_FILL_LEVEL = 5;
-
-
 #include <cstdint>
 #include <random>
 #include <array>
@@ -29,6 +19,17 @@ constexpr size_t QUEUE_FILL_LEVEL = 5;
 #include <Programmer/Network.hpp>
 #include <Programmer/Programmer.hpp>
 #include <Programmer/protocol.hpp>
+
+namespace programmer {
+
+/* Network stack tester configuration */
+constexpr bool ENDLESS_TX = false; /* Target sends a response frame indefinitely. Transmitter throughput test */
+constexpr bool TX_THROUGHPUT_TEST = false; /* Use all buffer space to maximalize troughput */
+constexpr bool CHECKSUM_BYTE_SUPPORT = true; /* Targets checksum calculation function handles odd-length packets */
+// 1512
+constexpr int TARGET_BUFFER_SIZE = 512;	/* Targets transmit buffer size. Frames above 512 bytes require extended ethernet checksum function! */
+static constexpr long long TIMEOUT = 500;
+constexpr size_t QUEUE_FILL_LEVEL = 5;
 
 class Timer {
 	public:
@@ -176,5 +177,7 @@ class TargetProtoTester {
 
 		std::unique_ptr<IProgrammerStrategy> _programmer;
 };
+
+} // namespace programmer
 
 #endif /* __TARGETTESTER_HPP__ */

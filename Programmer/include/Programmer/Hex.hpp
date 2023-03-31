@@ -12,6 +12,8 @@
 #include <fstream>
 #include <string_view>
 
+namespace programmer {
+
 class ImageInterface;
 
 class Hex {
@@ -33,5 +35,7 @@ class Hex {
 		void parse_line(const std::string_view &line);
 		bool process_line();
 };
+
+} // namespace programmer
 
 #endif /* __HEX_HPP__ */

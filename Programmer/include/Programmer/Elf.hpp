@@ -16,6 +16,8 @@
 
 #include <Programmer/elf.h>
 
+namespace programmer {
+
 class Elf;
 
 class ElfSection {
@@ -60,8 +62,6 @@ class Elf {
 		void read_sections();
 };
 
-
-
-
+} // namespace programmer
 
 #endif /* __ELF_HPP__ */

@@ -16,6 +16,8 @@
 
 #include <Programmer/types.hpp>
 
+namespace programmer {
+
 class SocketException : public std::system_error {
 	public:
 		SocketException(const char*) : std::system_error(WSAGetLastError(), std::system_category()) {}
@@ -166,5 +168,7 @@ class Network {
 		using htonl = convert_endian<uint32_t>;
 		using ntohl = convert_endian<uint32_t>;
 };
+
+} // namespace programmer
 
 #endif /* __NETWORK_HPP__ */

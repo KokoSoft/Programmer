@@ -12,6 +12,8 @@
 
 #include <Programmer/Exceptions.hpp>
 
+namespace programmer {
+
 Exception::Exception(const std::string_view format, std::format_args&& args)
 	: std::runtime_error(nullptr)
 {
@@ -45,5 +47,7 @@ void Exception::append(const char* message, ...) {
 	_message.append(std::format(message, arg_list));
 	va_end(arg_list);
 }
+
 #endif
 
+} // namespace programmer

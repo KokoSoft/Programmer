@@ -18,6 +18,8 @@
 #include <Programmer/protocol.hpp>
 #include <Programmer/DeviceDescriptor.hpp>
 
+namespace programmer {
+
 class ETarget : public Exception {
 	public:
 		ETarget(const Protocol::Status status);
@@ -255,5 +257,7 @@ class NetworkProgrammer : public IProgrammerStrategy {
 			std::array<std::byte, BUFFER_SIZE> _buffer;
 		} _rx_buf;
 };
+
+} // namespace programmer
 
 #endif /* __PROGRAMMER_HPP__ */

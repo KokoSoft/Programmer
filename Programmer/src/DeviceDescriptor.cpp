@@ -9,6 +9,9 @@
 #include <Programmer/DeviceDescriptor.hpp>
 #include <Programmer/types.hpp>
 
+namespace programmer
+{
+
 const std::array supported_devices = {
 	DeviceDescriptor(DeviceDescriptor::PIC18F66J60, "PIC18F66J60", KB(64), 0xFFF8),
 	DeviceDescriptor(DeviceDescriptor::PIC18F86J60, "PIC18F86J60", KB(64), 0xFFF8),
@@ -28,3 +31,5 @@ const DeviceDescriptor* DeviceDescriptor::find(uint16_t dev_id) {
 
 	return &*dev;
 }
+
+} // namespace programmer
