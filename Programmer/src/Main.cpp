@@ -25,7 +25,7 @@
 
 int main(int argc, char** argv) {
 	try {
-		Network::startup();
+		programmer::Network::startup();
 
 		std::cout << "Hello World! " << argc << "\n";
 
@@ -35,13 +35,13 @@ int main(int argc, char** argv) {
 		TargetNetworkTester test(ip.s_addr);
 		test.test();
 #elif defined(BOOT_TESTER)
-		auto prog = std::make_unique<NetworkProgrammer>();
+		auto prog = std::make_unique<programmer::NetworkProgrammer>();
 		IN_ADDR ip;
 		//inet_pton(AF_INET, "192.168.56.101", &ip);
 		inet_pton(AF_INET, "10.11.12.3", &ip);
 		prog->configure_device(ip.s_addr);
 
-		TargetProtoTester test(std::move(prog));
+		programmer::TargetProtoTester test(std::move(prog));
 		test.run_tests();
 #else
 		if (!!(argc > 1)) {
@@ -109,16 +109,16 @@ int main(int argc, char** argv) {
 #endif
 		if (0)
 		{
-			Image img;
-			Elf elf("mc.production.elf");
+			programmer::Image img;
+			programmer::Elf elf("mc.production.elf");
 			elf.read_image2(img);
 			//elf.print();
 		}
 
 		if (0)
 		{
-			ImageProgrammer img;
-			Elf elf("rolety.X.production.elf");
+			programmer::ImageProgrammer img;
+			programmer::Elf elf("rolety.X.production.elf");
 			elf.read_image(img);
 			img.program();
 			/*
@@ -161,8 +161,8 @@ int main(int argc, char** argv) {
 
 		if (0)
 		{
-			Image img;
-			Hex::read("rolety.X.production.hex", img);
+			programmer::Image img;
+			programmer::Hex::read("rolety.X.production.hex", img);
 			//Hex::read("mc.production.hex", img);
 			/*
 			 * 0x0 0x3
@@ -180,6 +180,6 @@ int main(int argc, char** argv) {
 		printf("Error: %s\n", err.what());
 	}
 
-	Network::cleanup();
+	programmer::Network::cleanup();
 	return 0;
 }

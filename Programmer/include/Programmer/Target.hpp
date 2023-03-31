@@ -13,6 +13,8 @@
 
 #include <Programmer/Network.hpp>
 
+namespace programmer {
+
 class Target {
 	public:
 		Target(uint16_t dev_id, size_t flash_size);
@@ -32,5 +34,7 @@ class Target {
 		SocketUDP _socket;
 
 };
+
+} // namespace programmer
 
 #endif /* __TARGET_HPP__ */

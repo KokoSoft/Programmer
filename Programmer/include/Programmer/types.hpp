@@ -16,6 +16,8 @@
 
 #include <Programmer/Exceptions.hpp>
 
+namespace programmer {
+
 #define _T(x) L ## x
 typedef std::wstring String;
 
@@ -28,5 +30,7 @@ typedef std::wstring String;
 #else
 #error 'Declare PACKED_STRUCT_* for this compiler.'
 #endif
+
+} // namespace programmer
 
 #endif /* __TYPES_HPP__ */

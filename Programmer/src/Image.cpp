@@ -10,6 +10,7 @@
 #include <Programmer/types.hpp>
 #include <Programmer/Image.hpp>
 
+namespace programmer {
 
 void Image::process(size_t address, const std::span<const std::byte>& data) {
 	std::cout << " 0x" << std::hex << address << " 0x" << data.size_bytes();
@@ -143,3 +144,5 @@ void ImageProgrammer::write(size_t address, const std::span<std::byte>& data) {
 void ImageProgrammer::progress(size_t pos, size_t max, Operation op) {
 
 }
+
+} // namespace programmer

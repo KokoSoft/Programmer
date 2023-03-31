@@ -7,6 +7,7 @@
 #include <Programmer/types.hpp>
 #include <Programmer/Elf.hpp>
 
+namespace programmer {
 
 void sh_type(int type) {
 #define X(x) if (type == x) printf(#x "\n");
@@ -287,3 +288,5 @@ std::string StringSection::get(unsigned int index) {
 void read_image(ImageInterface& image) {
 
 }
+
+} // namespace programmer

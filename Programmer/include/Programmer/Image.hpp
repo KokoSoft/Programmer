@@ -12,6 +12,8 @@
 #include <list>
 #include <vector>
 
+namespace programmer {
+
 class MemoryBlock {
 	public:
 		MemoryBlock(size_t address, const std::span<const std::byte>& data) : address(address), data(data) {};
@@ -64,4 +66,7 @@ class ImageProgrammer : public Image {
 		};
 		void progress(size_t pos, size_t max, Operation op);
 };
+
+} // namespace programmer
+
 #endif /* __IMAGE_HPP__ */

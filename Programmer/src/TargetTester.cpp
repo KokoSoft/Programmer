@@ -13,6 +13,8 @@
 
 #include <stdio.h>
 
+namespace programmer {
+
 Timer::Timer(int64_t time) {
 	_handle = CreateWaitableTimer(nullptr, false, nullptr);
 	if (!_handle)
@@ -453,4 +455,4 @@ void TargetProtoTester::run_test(std::function<void(void)> fun,
 		throw Exception("Invalid result {}. Expected {}.", static_cast<uint8_t>(status), static_cast<uint8_t>(expected_result));
 }
 
-
+} // namespace programmer

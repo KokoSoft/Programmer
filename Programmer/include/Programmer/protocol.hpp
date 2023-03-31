@@ -10,7 +10,7 @@
 #include <cinttypes>
 #include <bit>
 
-namespace Protocol {
+namespace programmer::Protocol {
 	constexpr uint16_t PORT = 666;
 	constexpr uint16_t VERSION = 1;
 
@@ -117,6 +117,7 @@ namespace Protocol {
 	struct ChecksumReply {
 		be32_t checksum;
 	};
-};
+
+} // namespace programmer
 
 #endif // !__PROTOCOL_HPP__
