@@ -149,7 +149,7 @@ void IProgrammerStrategy::erase_write(uint32_t address, const std::span<const st
 /* ETarget */
 
 ETarget::ETarget(const Protocol::Status status)
-	: Exception(), _status(status)
+	: Exception(), status(status)
 {
 	switch (status) {
 		case Protocol::STATUS_INV_OP:
