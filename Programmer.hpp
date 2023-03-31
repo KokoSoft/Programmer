@@ -21,7 +21,7 @@
 class ETarget : public Exception {
 	public:
 		ETarget(const Protocol::Status status);
-		const Protocol::Status _status;
+		const Protocol::Status status;
 };
 
 struct ProgrammerDescriptor {
