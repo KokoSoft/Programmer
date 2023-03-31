@@ -11,7 +11,7 @@
 #include <cinttypes>
 #include <vector>
 
-#include "Network.hpp"
+#include <Programmer/Network.hpp>
 
 class Target {
 	public:

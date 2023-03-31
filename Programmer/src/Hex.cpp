@@ -7,10 +7,10 @@
 #include <iostream>
 #include <vector>
 
-#include "types.hpp"
+#include <Programmer/types.hpp>
 
-#include "Hex.hpp"
-#include "Image.hpp"
+#include <Programmer/Hex.hpp>
+#include <Programmer/Image.hpp>
 
 enum {
 	RT_DATA,				// Data

@@ -10,7 +10,7 @@
 
 #include <winsock2.h>
 
-#include "Network.hpp"
+#include <Programmer/Network.hpp>
 
 void Network::startup() {
 	WSADATA wsa_data;

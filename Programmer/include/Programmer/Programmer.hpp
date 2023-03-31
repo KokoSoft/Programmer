@@ -14,9 +14,9 @@
 #include <concepts>
 #include <utility>
 
-#include "Network.hpp"
-#include "Protocol.hpp"
-#include "DeviceDescriptor.hpp"
+#include <Programmer/Network.hpp>
+#include <Programmer/protocol.hpp>
+#include <Programmer/DeviceDescriptor.hpp>
 
 class ETarget : public Exception {
 	public:

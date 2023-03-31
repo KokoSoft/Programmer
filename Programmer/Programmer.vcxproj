@@ -77,6 +77,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -93,6 +94,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -109,6 +111,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -125,6 +128,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,30 +139,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Elf.cpp" />
-    <ClCompile Include="Exceptions.cpp" />
-    <ClCompile Include="Hex.cpp" />
-    <ClCompile Include="Image.cpp" />
-    <ClCompile Include="Network.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Programmer.cpp" />
-    <ClCompile Include="Target.cpp" />
-    <ClCompile Include="DeviceDescriptor.cpp" />
-    <ClCompile Include="TargetTester.cpp" />
+    <ClCompile Include="src\Elf.cpp" />
+    <ClCompile Include="src\Exceptions.cpp" />
+    <ClCompile Include="src\Hex.cpp" />
+    <ClCompile Include="src\Image.cpp" />
+    <ClCompile Include="src\Network.cpp" />
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\Programmer.cpp" />
+    <ClCompile Include="src\Target.cpp" />
+    <ClCompile Include="src\DeviceDescriptor.cpp" />
+    <ClCompile Include="src\TargetTester.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeviceDescriptor.hpp" />
-    <ClInclude Include="elf.h" />
-    <ClInclude Include="Elf.hpp" />
-    <ClInclude Include="Exceptions.hpp" />
-    <ClInclude Include="Hex.hpp" />
-    <ClInclude Include="Image.hpp" />
-    <ClInclude Include="Network.hpp" />
-    <ClInclude Include="Programmer.hpp" />
-    <ClInclude Include="protocol.hpp" />
-    <ClInclude Include="Target.hpp" />
-    <ClInclude Include="TargetTester.hpp" />
-    <ClInclude Include="types.hpp" />
+    <ClInclude Include="include\Programmer\DeviceDescriptor.hpp" />
+    <ClInclude Include="include\Programmer\elf.h" />
+    <ClInclude Include="include\Programmer\Elf.hpp" />
+    <ClInclude Include="include\Programmer\Exceptions.hpp" />
+    <ClInclude Include="include\Programmer\Hex.hpp" />
+    <ClInclude Include="include\Programmer\Image.hpp" />
+    <ClInclude Include="include\Programmer\Network.hpp" />
+    <ClInclude Include="include\Programmer\Programmer.hpp" />
+    <ClInclude Include="include\Programmer\protocol.hpp" />
+    <ClInclude Include="include\Programmer\Target.hpp" />
+    <ClInclude Include="include\Programmer\TargetTester.hpp" />
+    <ClInclude Include="include\Programmer\types.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

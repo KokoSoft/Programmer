@@ -6,8 +6,8 @@
 
 #include <algorithm>
 
-#include "DeviceDescriptor.hpp"
-#include "types.hpp"
+#include <Programmer/DeviceDescriptor.hpp>
+#include <Programmer/types.hpp>
 
 const std::array supported_devices = {
 	DeviceDescriptor(DeviceDescriptor::PIC18F66J60, "PIC18F66J60", KB(64), 0xFFF8),

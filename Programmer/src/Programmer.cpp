@@ -8,8 +8,8 @@
 #include <array>
 #include <cassert>
 
-#include "Programmer.hpp"
-#include "DeviceDescriptor.hpp"
+#include <Programmer/Programmer.hpp>
+#include <Programmer/DeviceDescriptor.hpp>
 
 /* Programmer */
 

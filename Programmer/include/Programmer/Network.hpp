@@ -14,7 +14,7 @@
 #include <Winsock2.h> 
 #include <Ws2tcpip.h>
 
-#include "types.hpp"
+#include <Programmer/types.hpp>
 
 class SocketException : public std::system_error {
 	public:

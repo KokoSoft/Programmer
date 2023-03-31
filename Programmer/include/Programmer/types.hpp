@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <cassert>
 
-#include "Exceptions.hpp"
+#include <Programmer/Exceptions.hpp>
 
 #define _T(x) L ## x
 typedef std::wstring String;
