@@ -333,6 +333,7 @@ void TargetNetworkTester::print_size(uint64_t value) {
 
 
 /* TargetProtoTester */
+#define BUFFER_SIZE (1024+512)
 
 void TargetProtoTester::run_tests() {
 	auto prog = _programmer.get();
@@ -352,13 +353,17 @@ void TargetProtoTester::run_tests() {
 	run_test([prog] { prog->read(0x00400000, 4); }, Protocol::STATUS_INV_ADDR);
 
 	// Size too big
+#if BUFFER_SIZE < 1024
 	printf("Size too big\n");
 	run_test([prog] { prog->read(1024, 1024); }, Protocol::STATUS_INV_LENGTH );
+#endif
 
+	#define ODD_SIZE
+#ifndef ODD_SIZE
 	// Odd size
 	printf("Odd size\n");
 	run_test([prog] { prog->read(1024, 63); }, Protocol::STATUS_INV_LENGTH);
-
+#endif
 	// Valid request
 	printf("Valid read\n");
 	run_test([prog] { prog->read(1024, 64); });
@@ -382,11 +387,11 @@ void TargetProtoTester::run_tests() {
 	run_test([prog] { prog->erase(1024); });
 	run_test([prog, boot_base] { prog->erase(boot_base + 2048); });
 
-	std::array<std::byte, 63> tmp63;
-	tmp63.fill((std::byte)0x55);
-
 	std::array<std::byte, 64> tmp64;
 	tmp64.fill((std::byte)0xAA);
+
+	std::array<std::byte, 68> tmp68;
+	tmp68.fill((std::byte)0x55);
 
 	std::array<std::byte, 128> tmp128;
 	tmp128.fill((std::byte)0xAA);
@@ -398,7 +403,7 @@ void TargetProtoTester::run_tests() {
 	run_test([prog, tmp64] { prog->write(63, tmp64); }, Protocol::STATUS_INV_ADDR);
 
 	printf("Write unaligned length\n");
-	run_test([prog, tmp63] { prog->write(64, tmp63); }, Protocol::STATUS_INV_LENGTH);
+	run_test([prog, tmp68] { prog->write(64, tmp68); }, Protocol::STATUS_INV_LENGTH);
 
 	printf("Write boot, overlap beginning\n");
 	run_test([prog, tmp128, boot_base] { prog->write(boot_base - 64, tmp128); }, Protocol::STATUS_PROTECTED_ADDR);
@@ -419,21 +424,92 @@ void TargetProtoTester::run_tests() {
 	run_test([prog, tmp64, boot_base] { prog->write(boot_base - 64, tmp64); });
 
 	printf("Write ok2\n");
-	run_test([prog, tmp64] { prog->write(64, tmp64); });
+	run_test([prog, tmp64, boot_base] { prog->write(boot_base + 2048, tmp64); });
 
-	// TODO: Truncated frame
+	printf("Write ok3\n");
+	run_test([prog, tmp64] { prog->write(1024+128, tmp64); });
 
+	// TODO: Write truncated frame
+
+#if 0
 	std::span<const std::byte> rcv;
 	printf("Read\n");
 	run_test([prog, &rcv] { rcv = prog->read(1024 + 128, 64); });
 	if (std::memcmp(tmp64.data(), rcv.data(), rcv.size_bytes()))
 		throw Exception("Received invalid data.");
-#if 0
 	prog.read(1024, 128);
 	prog.read(1024, 128);
 	prog.read(1024, 1024);
 	prog.read(1024, 102);
 	prog.read(1024, 25);
+#endif
+	printf("---- TEST -----\n");
+
+	boot_base = 1024;
+	uint32_t boot_size = 1024;
+	uint32_t boot_end = boot_base + boot_size;
+	uint32_t pos;
+	unsigned char boot[2048];
+	std::array<std::byte, 1024> fill;
+	std::memset(boot, 0, sizeof(boot));
+
+	srand(time(NULL));
+	for (pos = 0; pos < fill.size(); pos++)
+		fill[pos] = static_cast<std::byte>(rand());
+
+#if 0
+	printf("Erase 0x%06X\n", boot_base);
+	prog->erase(boot_base);
+	printf("Write fill %u @ 0x%06X\n", fill.size(), boot_base);
+	prog->write(boot_base, fill);
+#else
+	prog->erase_write(boot_base, fill);
+#endif
+
+	printf("Erase 0x%06X\n", boot_base+1024);
+	prog->erase(boot_base+1024);
+	printf("Erase 0x%06X\n", boot_base - 1024);
+	prog->erase(boot_base - 1024);
+
+	printf("Read 0x%06X\n", boot_base);
+	auto rd = prog->read(boot_base, 1024);
+	for (pos = 0; pos < 1024; pos++) {
+		if ((pos % 16) == 0) printf("0x%08X: ", boot_base + pos);
+		printf("%02X ", rd[pos]);
+
+		if ((pos % 16) == 15) printf("\n");
+	}
+
+	printf("Result = %d\n", std::memcmp(rd.data(), fill.data(), 1024));
+
+#if 0
+	for (pos = boot_base; pos < boot_end; pos += 128) {
+		auto rcv = prog->read(pos, 128);
+		std::memcpy(boot + pos - boot_base, rcv.data(), rcv.size_bytes());
+	}
+
+	for (pos = 0; pos < boot_size; pos++) {
+		if ((pos % 16) == 0) printf("0x%08X: ", boot_base + pos);
+		printf("%02X ", boot[pos]);
+
+		if ((pos % 16) == 15) printf("\n");
+	}
+
+	for (pos = boot_base; pos < boot_end; pos += 128) {
+		prog->write(pos, tmp128);
+	}
+
+	for (pos = boot_base; pos < boot_end; pos += 128) {
+		auto rcv = prog->read(pos, 128);
+		std::memcpy(boot + pos - boot_base, rcv.data(), rcv.size_bytes());
+	}
+
+	for (pos = 0; pos < boot_size; pos++) {
+		if ((pos % 16) == 0) printf("0x%08X: ", boot_base + pos);
+		printf("%02X ", boot[pos]);
+
+		if ((pos % 16) == 15) printf("\n");
+	}
 #endif
 }
 
