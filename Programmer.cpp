@@ -420,6 +420,17 @@ void NetworkProgrammer::erase(uint32_t address) {
 	communicate();
 }
 
+// Erase block and write
+void NetworkProgrammer::erase_write(uint32_t address, const std::span<const std::byte>& buffer) {
+	check_connection();
+
+	_tx_buf.select_operation(Protocol::OP_ERASE_WRITE, address, buffer.size_bytes());
+	// TODO: Check tx buffer space
+	std::memcpy(_tx_buf.prepare_payload(buffer.size_bytes()), buffer.data(), buffer.size_bytes());
+	
+	communicate();
+}
+
 // Reset a device
 void NetworkProgrammer::reset() {
 	check_connection();

@@ -130,6 +130,9 @@ class NetworkProgrammer : public IProgrammerStrategy {
 		// Erase a device's memory
 		virtual void erase(uint32_t address);
 
+		// Erase block and write
+		virtual void erase_write(uint32_t address, const std::span<const std::byte>& buffer);
+
 		// Reset a device
 		virtual void reset();
 
