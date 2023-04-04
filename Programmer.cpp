@@ -154,24 +154,31 @@ ETarget::ETarget(const Protocol::Status status)
 	switch (status) {
 		case Protocol::STATUS_INV_OP:
 			_message = "Operation not supported by the target.";
+			break;
 
 		case Protocol::STATUS_INV_PARAM:
 			_message = "The target detected an invalid parameter.";
+			break;
 
 		case Protocol::STATUS_INV_LENGTH:
 			_message = "Invalid operation length.";
+			break;
 
 		case Protocol::STATUS_INV_ADDR:
 			_message = "Invalid operation address.";
+			break;
 
 		case Protocol::STATUS_PROTECTED_ADDR:
 			_message = "Forbidden operation address.";
+			break;
 
 		case Protocol::STATUS_INV_SRC:
 			_message = "Sender aren't permitted to perform this operation.";
+			break;
 
 		case Protocol::STATUS_PKT_SIZE:
 			_message = "The target reported invalid packet size.";
+			break;
 
 		case Protocol::STATUS_REQUEST:
 		default:
