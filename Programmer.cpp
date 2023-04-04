@@ -194,7 +194,8 @@ const ProgrammerDescriptor NetworkProgrammer::_prog_desc = {
 	NetworkProgrammer::ReceiveBuffer::MAX_PAYLOAD,
 	// TODO: NetworkProgrammer::TransmitBuffer::,
 	// max_read
-	NetworkProgrammer::ReceiveBuffer::MAX_PAYLOAD
+	0xCA,
+	//NetworkProgrammer::ReceiveBuffer::MAX_PAYLOAD
 };
 
 
@@ -211,8 +212,11 @@ void NetworkProgrammer::set_address(uint32_t address, uint16_t port) {
 	_tx_address.sin_addr.s_addr = address;
 	_tx_address.sin_port = Network::htons()(port);
 
-	if (address == INADDR_BROADCAST)
+	if (address == INADDR_BROADCAST) {
+		// Temporary w/a
+		_tx_address.sin_addr.s_addr = 0xFFFFFF0A;
 		_socket.set_broadcast(true);
+	}
 }
 
 void NetworkProgrammer::check_connection() {
@@ -404,10 +408,9 @@ std::span<const std::byte> NetworkProgrammer::read(uint32_t address, size_t size
 void NetworkProgrammer::write(uint32_t address, const std::span<const std::byte>& buffer) {
 	check_connection();
 	
-		//_tx_buf.select_operation(Protocol::OP_WRITE, address, buffer.size_bytes());
-	auto write = _tx_buf.prepare_payload<Protocol::Write>();
-	write->address = address;
-	std::memcpy(write->data, buffer.data(), sizeof(write->data));
+	_tx_buf.select_operation(Protocol::OP_WRITE, address, buffer.size_bytes());
+	// TODO: Check tx buffer space
+	std::memcpy(_tx_buf.prepare_payload(buffer.size_bytes()), buffer.data(), buffer.size_bytes());
 
 	communicate();
 }

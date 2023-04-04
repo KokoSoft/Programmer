@@ -194,6 +194,15 @@ class NetworkProgrammer : public IProgrammerStrategy {
 					return reinterpret_cast<T*>(&_buffer[sizeof(Protocol::RequestHeader)]);
 				}
 
+				// TODO: Przemysl co z tym zrobic
+				void* prepare_payload(size_t size) {
+					size += sizeof(Protocol::RequestHeader);
+					assert(_buffer.size() >= size, "Tx buffer too small");
+
+					_size = size;
+					return reinterpret_cast<void*>(&_buffer[sizeof(Protocol::RequestHeader)]);
+				}
+
 				// Select operation without payload
 				void select_operation(Protocol::Operation op, uint32_t address = 0, uint16_t length = 0);
 
@@ -208,7 +217,7 @@ class NetworkProgrammer : public IProgrammerStrategy {
 				const Protocol::RequestHeader* get_header() const;
 
 				size_t _size;
-				std::array<std::byte, 128> _buffer;
+				std::array<std::byte, 1500> _buffer;
 		} _tx_buf;
 
 		class ReceiveBuffer {
